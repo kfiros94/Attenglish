@@ -1,6 +1,4 @@
-<img width="517" height="388" alt="image" src="https://github.com/user-attachments/assets/b421ed5c-f173-4da6-a286-f49fc17cfec6" />
-
-
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/b421ed5c-f173-4da6-a286-f49fc17cfec6" />
 
 # Attenglish 📚💡
 **AI-Powered English Learning App for ADHD Students**
