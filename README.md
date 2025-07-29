@@ -4,6 +4,7 @@
 **AI-Powered English Learning App for ADHD Students**
 
 Attenglish is a mobile-first application designed to support English language acquisition for students with ADHD. Built with accessibility, personalization, and gamification in mind, Attenglish empowers both learners and educators with tools that address attention challenges and cognitive variability.
+Capstone project was developed by Kfir Amoyal & Omri Heit and advised by Dr. Nataly Levi of Braude College of Engineering.
 
 ---
 
@@ -60,14 +61,6 @@ Attenglish is a mobile-first application designed to support English language ac
 
 ---
 
-## 🧪 Testing & Evaluation
-
-- ✔️ Manual test cases for each user role (Student, Teacher, Parent, Admin)
-- ✔️ Offline support & resync logic
-- ✔️ AI filter tests for safety and age-appropriateness
-- ✔️ Pilot program with real-time user feedback
-
----
 
 ## 💾 Installation
 
