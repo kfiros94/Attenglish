@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/services/localization_service.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/greeting_helper.dart';
+import '../../classroom/widgets/classroom_info_widget.dart';
 
 /// Home screen with personalized greeting and user dashboard
 class HomeScreen extends StatefulWidget {
@@ -163,9 +164,41 @@ class _HomeScreenState extends State<HomeScreen> {
             onSelected: (value) {
               if (value == 'logout') {
                 _handleLogout();
+              } else if (value == 'classrooms') {
+                Navigator.of(context).pushNamed('/classrooms');
+              } else if (value == 'admin') {
+                Navigator.of(context).pushNamed('/admin');
               }
             },
             itemBuilder: (context) => [
+              // Show "Manage Teachers" for admins
+              if (_userData?.role == 'admin')
+                PopupMenuItem(
+                  value: 'admin',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.admin_panel_settings, color: AppColors.accent),
+                      const SizedBox(width: AppTheme.spacingSmall),
+                      Text(
+                        LocalizationService.instance.isRTL
+                            ? 'ניהול מורים'
+                            : 'Manage Teachers',
+                      ),
+                    ],
+                  ),
+                ),
+              // Show "My Classrooms" for teachers
+              if (_userData?.role == 'teacher')
+                PopupMenuItem(
+                  value: 'classrooms',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.school, color: AppColors.primary),
+                      const SizedBox(width: AppTheme.spacingSmall),
+                      Text(AppStrings.myClassrooms(_currentLocale)),
+                    ],
+                  ),
+                ),
               PopupMenuItem(
                 value: 'logout',
                 child: Row(
@@ -259,6 +292,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: AppTheme.spacingXLarge),
+
+                        // Classroom info section (only for students)
+                        if (_userData!.role == 'student') ...[
+                          const ClassroomInfoWidget(),
+                          const SizedBox(height: AppTheme.spacingXLarge),
+                        ],
 
                         // User info section
                         _buildInfoCard(
