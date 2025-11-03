@@ -26,6 +26,40 @@ class AuthService {
   /// Returns null if no user is signed in
   User? get currentUser => _auth.currentUser;
 
+  /// Sign up with email and password (for teachers, parents, and admins)
+  ///
+  /// Creates a new user in Firebase Auth and Firestore
+  /// Throws [FirebaseAuthException] if sign up fails
+  Future<UserCredential> signUpWithEmail(
+    String email,
+    String password,
+    UserModel userData,
+  ) async {
+    try {
+      // Create user in Firebase Auth
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Create user document in Firestore
+      if (credential.user != null) {
+        final userWithId = userData.copyWith(
+          id: credential.user!.uid,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await createUserDocument(credential.user!.uid, userWithId);
+      }
+
+      return credential;
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw Exception('Failed to sign up: $e');
+    }
+  }
+
   /// Sign in with email and password (for teachers, parents, and admins)
   ///
   /// Throws [FirebaseAuthException] if sign in fails
