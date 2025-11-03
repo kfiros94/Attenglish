@@ -165,4 +165,134 @@ class AppStrings {
   // Password Requirements
   static String passwordRequirement(Locale locale) =>
       _isHebrew(locale) ? 'לפחות 6 תווים' : 'At least 6 characters';
+
+  // Classroom Management
+  static String myClassrooms(Locale locale) =>
+      _isHebrew(locale) ? 'הכיתות שלי' : 'My Classrooms';
+
+  static String manageClassrooms(Locale locale) =>
+      _isHebrew(locale) ? 'ניהול כיתות' : 'Manage Classrooms';
+
+  static String createClassroom(Locale locale) =>
+      _isHebrew(locale) ? 'צור כיתה' : 'Create Classroom';
+
+  static String createNewClassroom(Locale locale) =>
+      _isHebrew(locale) ? 'יצירת כיתה חדשה' : 'Create New Classroom';
+
+  static String classroomName(Locale locale) =>
+      _isHebrew(locale) ? 'שם הכיתה' : 'Classroom Name';
+
+  static String classroomNameHint(Locale locale) =>
+      _isHebrew(locale) ? 'לדוגמה: כיתה א1' : 'e.g., Class 1A';
+
+  static String grade(Locale locale) => _isHebrew(locale) ? 'כיתה' : 'Grade';
+
+  static String gradeNumber(Locale locale, int grade) =>
+      _isHebrew(locale) ? 'כיתה $grade' : 'Grade $grade';
+
+  static String students(Locale locale) => _isHebrew(locale) ? 'תלמידים' : 'Students';
+
+  static String teacher(Locale locale) => _isHebrew(locale) ? 'מורה' : 'Teacher';
+
+  static String noClassrooms(Locale locale) =>
+      _isHebrew(locale) ? 'אין כיתות עדיין' : 'No Classrooms Yet';
+
+  static String noClassroomsMessage(Locale locale) => _isHebrew(locale)
+      ? 'לחץ על + ליצירת הכיתה הראשונה שלך'
+      : 'Click the + button to create your first classroom';
+
+  static String notAssignedToClass(Locale locale) =>
+      _isHebrew(locale) ? 'לא משובץ לכיתה עדיין' : 'Not assigned to a class yet';
+
+  static String classroomCreatedSuccess(Locale locale) =>
+      _isHebrew(locale) ? 'הכיתה נוצרה בהצלחה!' : 'Classroom created successfully!';
+
+  static String classroomDeletedSuccess(Locale locale) =>
+      _isHebrew(locale) ? 'הכיתה נמחקה בהצלחה' : 'Classroom deleted successfully';
+
+  static String deleteClassroom(Locale locale) =>
+      _isHebrew(locale) ? 'מחיקת כיתה' : 'Delete Classroom';
+
+  static String deleteClassroomConfirm(Locale locale, String className) =>
+      _isHebrew(locale)
+          ? 'האם אתה בטוח שברצונך למחוק את הכיתה "$className"?'
+          : 'Are you sure you want to delete classroom "$className"?';
+
+  static String delete(Locale locale) => _isHebrew(locale) ? 'מחק' : 'Delete';
+
+  static String cancel(Locale locale) => _isHebrew(locale) ? 'ביטול' : 'Cancel';
+
+  static String create(Locale locale) => _isHebrew(locale) ? 'צור' : 'Create';
+
+  static String errorLoadingClassrooms(Locale locale) =>
+      _isHebrew(locale) ? 'שגיאה בטעינת כיתות' : 'Error loading classrooms';
+
+  static String errorCreatingClassroom(Locale locale) =>
+      _isHebrew(locale) ? 'שגיאה ביצירת כיתה' : 'Error creating classroom';
+
+  static String errorDeletingClassroom(Locale locale) =>
+      _isHebrew(locale) ? 'שגיאה במחיקת כיתה' : 'Error deleting classroom';
+
+  static String school(Locale locale) => _isHebrew(locale) ? 'בית ספר' : 'School';
+
+  static String viewingClassroom(Locale locale, String className) => _isHebrew(locale)
+      ? 'תצוגת כיתה $className - בפיתוח'
+      : 'Viewing $className - Coming soon';
+
+  // Admin Management
+  static String manageTeachers(Locale locale) =>
+      _isHebrew(locale) ? 'ניהול מורים' : 'Manage Teachers';
+
+  static String createTeacher(Locale locale) =>
+      _isHebrew(locale) ? 'צור מורה' : 'Create Teacher';
+
+  static String createTeacherAccount(Locale locale) =>
+      _isHebrew(locale) ? 'יצירת חשבון מורה' : 'Create Teacher Account';
+
+  static String noTeachers(Locale locale) =>
+      _isHebrew(locale) ? 'אין מורים עדיין' : 'No Teachers Yet';
+
+  static String noTeachersMessage(Locale locale) => _isHebrew(locale)
+      ? 'לחץ על + ליצירת המורה הראשון'
+      : 'Click the + button to create your first teacher';
+
+  static String teacherCreatedSuccess(Locale locale) =>
+      _isHebrew(locale) ? 'מורה נוצר בהצלחה!' : 'Teacher Created Successfully!';
+
+  static String teacherCreatedLoginAgain(Locale locale) => _isHebrew(locale)
+      ? 'המורה נוצר בהצלחה. אנא התחבר שוב כמנהל.'
+      : 'The teacher has been created successfully. Please log in again as admin.';
+
+  static String loginAgain(Locale locale) =>
+      _isHebrew(locale) ? 'התחבר שוב' : 'Log In Again';
+
+  static String deleteTeacher(Locale locale) =>
+      _isHebrew(locale) ? 'מחיקת מורה' : 'Delete Teacher';
+
+  static String deleteTeacherConfirm(Locale locale, String teacherName) =>
+      _isHebrew(locale)
+          ? 'האם אתה בטוח שברצונך למחוק את המורה "$teacherName"?'
+          : 'Are you sure you want to delete teacher "$teacherName"?';
+
+  static String teacherDeletedSuccess(Locale locale) =>
+      _isHebrew(locale) ? 'המורה נמחק בהצלחה' : 'Teacher deleted successfully';
+
+  static String errorLoadingTeachers(Locale locale) =>
+      _isHebrew(locale) ? 'שגיאה בטעינת מורים' : 'Error loading teachers';
+
+  static String errorCreatingTeacher(Locale locale) =>
+      _isHebrew(locale) ? 'שגיאה ביצירת מורה' : 'Error creating teacher';
+
+  static String errorDeletingTeacher(Locale locale) =>
+      _isHebrew(locale) ? 'שגיאה במחיקת מורה' : 'Error deleting teacher';
+
+  // Admin Role
+  static String admin(Locale locale) => _isHebrew(locale) ? 'מנהל' : 'Admin';
+
+  static String createAdminAccount(Locale locale) =>
+      _isHebrew(locale) ? 'יצירת חשבון מנהל' : 'Create Admin Account';
+
+  static String adminSignupMessage(Locale locale) => _isHebrew(locale)
+      ? 'בתור מנהל, תוכל ליצור חשבונות מורים ולנהל את המערכת'
+      : 'As an admin, you can create teacher accounts and manage the system';
 }

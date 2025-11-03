@@ -7,6 +7,7 @@ class UserModel {
   final String schoolName;
   final String city;
   final int? grade;
+  final String? classId;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -19,6 +20,7 @@ class UserModel {
     required this.schoolName,
     required this.city,
     this.grade,
+    this.classId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -34,6 +36,7 @@ class UserModel {
       schoolName: json['schoolName'] as String,
       city: json['city'] as String,
       grade: json['grade'] as int?,
+      classId: json['classId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
@@ -52,6 +55,7 @@ class UserModel {
       'schoolName': schoolName,
       'city': city,
       'grade': grade,
+      'classId': classId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -67,6 +71,7 @@ class UserModel {
     String? schoolName,
     String? city,
     int? grade,
+    String? classId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -79,6 +84,7 @@ class UserModel {
       schoolName: schoolName ?? this.schoolName,
       city: city ?? this.city,
       grade: grade ?? this.grade,
+      classId: classId ?? this.classId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -97,6 +103,7 @@ class UserModel {
         other.schoolName == schoolName &&
         other.city == city &&
         other.grade == grade &&
+        other.classId == classId &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -111,12 +118,13 @@ class UserModel {
         schoolName.hashCode ^
         city.hashCode ^
         grade.hashCode ^
+        classId.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }
 
   @override
   String toString() {
-    return 'UserModel(id: $id, userName: $userName, fullName: $fullName, email: $email, role: $role, schoolName: $schoolName, city: $city, grade: $grade, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'UserModel(id: $id, userName: $userName, fullName: $fullName, email: $email, role: $role, schoolName: $schoolName, city: $city, grade: $grade, classId: $classId, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }

@@ -4,7 +4,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
+import 'features/auth/screens/admin_signup_screen.dart';
 import 'features/home/screens/home_screen.dart';
+import 'features/classroom/screens/classroom_management_screen.dart';
+import 'features/admin/screens/admin_management_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/localization_service.dart';
 import 'features/auth/services/auth_service.dart';
@@ -80,7 +83,10 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
+        '/admin-signup': (context) => const AdminSignUpScreen(),
         '/home': (context) => const HomeScreen(),
+        '/classrooms': (context) => const ClassroomManagementScreen(),
+        '/admin': (context) => const AdminManagementScreen(),
       },
     );
   }
