@@ -8,6 +8,7 @@ import '../../../core/services/localization_service.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/greeting_helper.dart';
 import '../../classroom/widgets/classroom_info_widget.dart';
+import '../widgets/dashboard_card.dart';
 
 /// Home screen with personalized greeting and user dashboard
 class HomeScreen extends StatefulWidget {
@@ -164,8 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
             onSelected: (value) {
               if (value == 'logout') {
                 _handleLogout();
-              } else if (value == 'classrooms') {
-                Navigator.of(context).pushNamed('/classrooms');
               } else if (value == 'admin') {
                 Navigator.of(context).pushNamed('/admin');
               }
@@ -187,18 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-              // Show "My Classrooms" for teachers
-              if (_userData?.role == 'teacher')
-                PopupMenuItem(
-                  value: 'classrooms',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.school, color: AppColors.primary),
-                      const SizedBox(width: AppTheme.spacingSmall),
-                      Text(AppStrings.myClassrooms(_currentLocale)),
-                    ],
-                  ),
-                ),
+              // Removed "My Classrooms" from menu - now on dashboard
               PopupMenuItem(
                 value: 'logout',
                 child: Row(
@@ -245,138 +233,250 @@ class _HomeScreenState extends State<HomeScreen> {
               : SafeArea(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(AppTheme.spacingLarge),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Mascot with personalized message
-                        MascotWidget(
-                          message: GreetingHelper.getMascotMessage(
-                            _currentLocale,
-                            _userData!.userName,
-                          ),
-                          size: 120,
-                        ),
-                        const SizedBox(height: AppTheme.spacingXLarge),
-
-                        // Welcome card
-                        Card(
-                          elevation: 2,
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppTheme.spacingLarge),
-                            child: Column(
-                              children: [
-                                Text(
-                                  AppStrings.welcomeToAttEnglish(_currentLocale),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: AppTheme.spacingMedium),
-                                Text(
-                                  '${AppStrings.loggedInAs(_currentLocale)} ${_userData!.email}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppTheme.spacingXLarge),
-
-                        // Classroom info section (only for students)
-                        if (_userData!.role == 'student') ...[
-                          const ClassroomInfoWidget(),
-                          const SizedBox(height: AppTheme.spacingXLarge),
-                        ],
-
-                        // User info section
-                        _buildInfoCard(
-                          LocalizationService.instance.isRTL
-                              ? 'מידע אישי'
-                              : 'Personal Information',
-                          [
-                            _buildInfoRow(
-                              LocalizationService.instance.isRTL
-                                  ? 'שם מלא'
-                                  : 'Full Name',
-                              _userData!.fullName,
-                            ),
-                            _buildInfoRow(
-                              LocalizationService.instance.isRTL
-                                  ? 'שם משתמש'
-                                  : 'Username',
-                              _userData!.userName,
-                            ),
-                            _buildInfoRow(
-                              LocalizationService.instance.isRTL
-                                  ? 'בית ספר'
-                                  : 'School',
-                              _userData!.schoolName,
-                            ),
-                            _buildInfoRow(
-                              LocalizationService.instance.isRTL ? 'עיר' : 'City',
-                              _userData!.city,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppTheme.spacingXLarge),
-
-                        // Placeholder for lessons
-                        Card(
-                          elevation: 2,
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppTheme.spacingLarge),
-                            child: Column(
-                              children: [
-                                const Icon(
-                                  Icons.construction,
-                                  size: 64,
-                                  color: AppColors.accent,
-                                ),
-                                const SizedBox(height: AppTheme.spacingMedium),
-                                Text(
-                                  LocalizationService.instance.isRTL
-                                      ? 'השיעורים שלך'
-                                      : 'Your Lessons',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: AppTheme.spacingSmall),
-                                Text(
-                                  LocalizationService.instance.isRTL
-                                      ? 'השיעורים יתווספו בקרוב...'
-                                      : 'Lessons coming soon...',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _userData!.role == 'teacher'
+                        ? _buildTeacherDashboard()
+                        : _buildStudentView(),
                   ),
                 ),
+    );
+  }
+
+  /// Build professional teacher dashboard
+  Widget _buildTeacherDashboard() {
+    final isRTL = LocalizationService.instance.isRTL;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Compact mascot with message
+        Center(
+          child: MascotWidget(
+            message: isRTL
+                ? 'מוכן ללמד היום?'
+                : 'Ready to teach today?',
+            size: 100,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingLarge),
+
+        // Dashboard title
+        Text(
+          isRTL ? 'לוח הבקרה שלי' : 'Dashboard',
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingMedium),
+
+        // Dashboard grid
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth > 800 ? 3 : 2;
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: AppTheme.spacingMedium,
+              crossAxisSpacing: AppTheme.spacingMedium,
+              childAspectRatio: 1.1,
+              children: [
+                // My Classrooms card
+                DashboardCard(
+                  icon: Icons.school,
+                  iconColor: AppColors.primary,
+                  title: isRTL ? 'הכיתות שלי' : 'My Classrooms',
+                  description: isRTL
+                      ? 'נהל את הכיתות והתלמידים שלך'
+                      : 'Manage your classes and students',
+                  onTap: () {
+                    Navigator.of(context).pushNamed('/classrooms');
+                  },
+                ),
+
+                // Student Progress card
+                DashboardCard(
+                  icon: Icons.analytics,
+                  iconColor: AppColors.secondary,
+                  title: isRTL ? 'התקדמות תלמידים' : 'Student Progress',
+                  description: isRTL
+                      ? 'צפה בדוחות והתקדמות'
+                      : 'View reports and analytics',
+                  badgeText: isRTL ? 'בקרוב' : 'Soon',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isRTL
+                              ? 'תכונה זו תהיה זמינה בקרוב'
+                              : 'This feature is coming soon',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // Create Lesson card
+                DashboardCard(
+                  icon: Icons.edit_note,
+                  iconColor: AppColors.accent,
+                  title: isRTL ? 'צור שיעור' : 'Create Lesson',
+                  description: isRTL
+                      ? 'העלה תוכן חדש ושיעורים'
+                      : 'Upload new content and lessons',
+                  badgeText: isRTL ? 'בקרוב' : 'Soon',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isRTL
+                              ? 'תכונה זו תהיה זמינה בקרוב'
+                              : 'This feature is coming soon',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // Content Library card
+                DashboardCard(
+                  icon: Icons.library_books,
+                  iconColor: Colors.purple,
+                  title: isRTL ? 'ספריית תכנים' : 'Content Library',
+                  description: isRTL
+                      ? 'עיין בתכנים זמינים'
+                      : 'Browse available content',
+                  badgeText: isRTL ? 'בקרוב' : 'Soon',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isRTL
+                              ? 'תכונה זו תהיה זמינה בקרוב'
+                              : 'This feature is coming soon',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Build student view (ADHD-friendly)
+  Widget _buildStudentView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Mascot with personalized message
+        MascotWidget(
+          message: GreetingHelper.getMascotMessage(
+            _currentLocale,
+            _userData!.userName,
+          ),
+          size: 120,
+        ),
+        const SizedBox(height: AppTheme.spacingXLarge),
+
+        // Welcome card
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingLarge),
+            child: Column(
+              children: [
+                Text(
+                  AppStrings.welcomeToAttEnglish(_currentLocale),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppTheme.spacingMedium),
+                Text(
+                  '${AppStrings.loggedInAs(_currentLocale)} ${_userData!.email}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingXLarge),
+
+        // Classroom info section (only for students)
+        if (_userData!.role == 'student') ...[
+          const ClassroomInfoWidget(),
+          const SizedBox(height: AppTheme.spacingXLarge),
+        ],
+
+        // User info section
+        _buildInfoCard(
+          LocalizationService.instance.isRTL ? 'מידע אישי' : 'Personal Information',
+          [
+            _buildInfoRow(
+              LocalizationService.instance.isRTL ? 'שם מלא' : 'Full Name',
+              _userData!.fullName,
+            ),
+            _buildInfoRow(
+              LocalizationService.instance.isRTL ? 'שם משתמש' : 'Username',
+              _userData!.userName,
+            ),
+            _buildInfoRow(
+              LocalizationService.instance.isRTL ? 'בית ספר' : 'School',
+              _userData!.schoolName,
+            ),
+            _buildInfoRow(
+              LocalizationService.instance.isRTL ? 'עיר' : 'City',
+              _userData!.city,
+            ),
+          ],
+        ),
+        const SizedBox(height: AppTheme.spacingXLarge),
+
+        // Placeholder for lessons
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingLarge),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.construction,
+                  size: 64,
+                  color: AppColors.accent,
+                ),
+                const SizedBox(height: AppTheme.spacingMedium),
+                Text(
+                  LocalizationService.instance.isRTL ? 'השיעורים שלך' : 'Your Lessons',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppTheme.spacingSmall),
+                Text(
+                  LocalizationService.instance.isRTL
+                      ? 'השיעורים יתווספו בקרוב...'
+                      : 'Lessons coming soon...',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
