@@ -51,7 +51,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AttEnglish',
+      title: 'Attenglish',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
 
