@@ -60,14 +60,27 @@ class AuthService {
     }
   }
 
-  /// Sign in with email and password (for teachers, parents, and admins)
+  /// Sign in with email or username and password
   ///
+  /// Accepts either email or username. If username is provided, looks up the email first.
   /// Throws [FirebaseAuthException] if sign in fails
   Future<UserCredential> signInWithEmail(
-    String email,
+    String emailOrUsername,
     String password,
   ) async {
     try {
+      String email = emailOrUsername;
+
+      // Check if input is username (doesn't contain @)
+      if (!emailOrUsername.contains('@')) {
+        // Look up email from username
+        final userEmail = await _getEmailFromUsername(emailOrUsername);
+        if (userEmail == null) {
+          throw Exception('No user found with username: $emailOrUsername');
+        }
+        email = userEmail;
+      }
+
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -77,6 +90,28 @@ class AuthService {
       throw _handleAuthException(e);
     } catch (e) {
       throw Exception('Failed to sign in: $e');
+    }
+  }
+
+  /// Get email from username by querying Firestore
+  ///
+  /// Returns email if username exists, null otherwise
+  Future<String?> _getEmailFromUsername(String userName) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(_usersCollection)
+          .where('userName', isEqualTo: userName)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        return null;
+      }
+
+      final userData = querySnapshot.docs.first.data();
+      return userData['email'] as String?;
+    } catch (e) {
+      throw Exception('Failed to lookup username: $e');
     }
   }
 

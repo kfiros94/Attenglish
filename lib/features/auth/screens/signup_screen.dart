@@ -34,6 +34,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'student'; // Default role - app is for students only
+  int _selectedGrade = 1; // Default grade for students
   Locale _currentLocale = LocalizationService.instance.currentLocale;
 
   @override
@@ -128,6 +129,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         role: _selectedRole,
         schoolName: _schoolNameController.text.trim(),
         city: _cityController.text.trim(),
+        grade: _selectedGrade, // Include grade for students
         createdAt: DateTime.now(),
       );
 
@@ -432,6 +434,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           AppStrings.schoolName(_currentLocale).toLowerCase(),
                         ),
                         autovalidateMode: AutovalidateMode.onUserInteraction,
+                      ),
+                      const SizedBox(height: AppTheme.spacingMedium),
+
+                      // Grade dropdown
+                      _buildFieldLabel(_currentLocale.languageCode == 'he' ? 'כיתה' : 'Grade'),
+                      DropdownButtonFormField<int>(
+                        value: _selectedGrade,
+                        decoration: InputDecoration(
+                          hintText: _currentLocale.languageCode == 'he' ? 'בחר כיתה' : 'Select Grade',
+                          prefixIcon: const Icon(
+                            Icons.school_outlined,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        items: List.generate(6, (index) {
+                          final grade = index + 1;
+                          return DropdownMenuItem(
+                            value: grade,
+                            child: Text(
+                              _currentLocale.languageCode == 'he' ? 'כיתה $grade' : 'Grade $grade',
+                              style: const TextStyle(
+                                fontSize: AppTheme.fontSizeMedium,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          );
+                        }),
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _selectedGrade = value;
+                                  });
+                                }
+                              },
+                        validator: (value) {
+                          if (value == null) {
+                            return _currentLocale.languageCode == 'he'
+                                ? 'נא לבחור כיתה'
+                                : 'Please select a grade';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: AppTheme.spacingMedium),
 
