@@ -13,6 +13,9 @@ import '../../../shared/widgets/atti_mascot.dart';
 import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/achievement_badge.dart';
 import '../../lessons/widgets/mission_card.dart';
+import '../../lessons/models/lesson_model.dart';
+import '../../lessons/services/lesson_service.dart';
+import '../../lessons/screens/student_lesson_viewer.dart';
 import '../../../core/theme/adhd_theme.dart';
 
 /// Home screen with personalized greeting and user dashboard
@@ -328,17 +331,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   description: isRTL
                       ? 'העלה תוכן חדש ושיעורים'
                       : 'Upload new content and lessons',
-                  badgeText: isRTL ? 'בקרוב' : 'Soon',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isRTL
-                              ? 'תכונה זו תהיה זמינה בקרוב'
-                              : 'This feature is coming soon',
-                        ),
-                      ),
-                    );
+                    Navigator.of(context).pushNamed('/lessons/create');
                   },
                 ),
 
@@ -350,17 +344,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   description: isRTL
                       ? 'עיין בתכנים זמינים'
                       : 'Browse available content',
-                  badgeText: isRTL ? 'בקרוב' : 'Soon',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isRTL
-                              ? 'תכונה זו תהיה זמינה בקרוב'
-                              : 'This feature is coming soon',
-                        ),
-                      ),
-                    );
+                    Navigator.of(context).pushNamed('/lessons/list');
                   },
                 ),
               ],
@@ -425,47 +410,138 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: ADHDTheme.spacingMedium),
 
-        // 5. Mission cards (placeholder data)
-        MissionCard(
-          icon: '📚',
-          title: isRTL ? 'שיעור חדש: צבעים' : 'New Lesson: Colors',
-          subtitle: isRTL ? 'למד 10 מילים חדשות של צבעים!' : 'Learn 10 new color words!',
-          durationMinutes: 5,
-          points: 20,
-          type: MissionType.lesson,
-          onTap: () {
-            // TODO: Navigate to lesson
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  isRTL ? 'השיעורים יתווספו בקרוב' : 'Lessons coming soon',
-                ),
-                backgroundColor: ADHDTheme.primaryBlue,
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: ADHDTheme.spacingMedium),
+        // 5. Mission cards (real lessons from teacher)
+        if (_userData!.classId != null)
+          StreamBuilder<List<LessonModel>>(
+            stream: LessonService.instance.classLessonsStream(_userData!.classId!),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(ADHDTheme.spacingLarge),
+                    child: CircularProgressIndicator(
+                      color: ADHDTheme.primaryBlue,
+                    ),
+                  ),
+                );
+              }
 
-        MissionCard(
-          icon: '🔄',
-          title: isRTL ? 'תרגול: מספרים' : 'Practice: Numbers',
-          subtitle: isRTL ? 'חזור על מה שלמדת' : 'Review what you learned',
-          durationMinutes: 3,
-          points: 10,
-          type: MissionType.practice,
-          onTap: () {
-            // TODO: Navigate to practice
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  isRTL ? 'תרגולים יתווספו בקרוב' : 'Practice coming soon',
+              if (snapshot.hasError) {
+                return Container(
+                  padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
+                  decoration: BoxDecoration(
+                    color: ADHDTheme.errorRed.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('⚠️', style: TextStyle(fontSize: 32)),
+                      const SizedBox(width: ADHDTheme.spacingSmall),
+                      Expanded(
+                        child: Text(
+                          'Could not load lessons',
+                          style: ADHDTheme.studentTextTheme.bodyLarge,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final lessons = snapshot.data ?? [];
+
+              if (lessons.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(ADHDTheme.spacingLarge),
+                  decoration: BoxDecoration(
+                    color: ADHDTheme.accentOrange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+                    border: Border.all(
+                      color: ADHDTheme.accentOrange.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text('📚', style: TextStyle(fontSize: 64)),
+                      const SizedBox(height: ADHDTheme.spacingMedium),
+                      Text(
+                        isRTL ? 'אין שיעורים חדשים' : 'No new lessons yet',
+                        style: ADHDTheme.studentTextTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: ADHDTheme.spacingSmall),
+                      Text(
+                        isRTL
+                            ? 'המורה שלך יעלה שיעורים בקרוב!'
+                            : 'Your teacher will post lessons soon!',
+                        style: ADHDTheme.studentTextTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Show up to 3 most recent lessons
+              return Column(
+                children: lessons.take(3).map((lesson) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: ADHDTheme.spacingMedium),
+                    child: MissionCard(
+                      icon: _getLessonIcon(lesson.topic),
+                      title: lesson.title,
+                      subtitle: lesson.description ??
+                          (isRTL ? 'שיעור חדש מהמורה שלך!' : 'New lesson from your teacher!'),
+                      durationMinutes: 5,
+                      points: _calculatePoints(lesson.difficulty),
+                      type: MissionType.lesson,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => StudentLessonViewer(
+                              lessonId: lesson.id,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          )
+        else
+          // Student not assigned to classroom yet
+          Container(
+            padding: const EdgeInsets.all(ADHDTheme.spacingLarge),
+            decoration: BoxDecoration(
+              color: ADHDTheme.primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+            ),
+            child: Column(
+              children: [
+                const Text('👋', style: TextStyle(fontSize: 64)),
+                const SizedBox(height: ADHDTheme.spacingMedium),
+                Text(
+                  isRTL ? 'ברוך הבא!' : 'Welcome!',
+                  style: ADHDTheme.studentTextTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                backgroundColor: ADHDTheme.secondaryGreen,
-              ),
-            );
-          },
-        ),
+                const SizedBox(height: ADHDTheme.spacingSmall),
+                Text(
+                  isRTL
+                      ? 'המורה שלך יוסיף אותך לכיתה בקרוב'
+                      : 'Your teacher will add you to a classroom soon',
+                  style: ADHDTheme.studentTextTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+
         const SizedBox(height: ADHDTheme.spacingLarge),
 
         // 6. Small Atti with encouragement
@@ -485,6 +561,43 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
+  }
+
+  /// Get appropriate icon for lesson based on topic
+  String _getLessonIcon(String? topic) {
+    if (topic == null) return '📚';
+
+    final topicLower = topic.toLowerCase();
+    if (topicLower.contains('grammar')) return '📝';
+    if (topicLower.contains('vocabulary')) return '📖';
+    if (topicLower.contains('reading')) return '📕';
+    if (topicLower.contains('writing')) return '✍️';
+    if (topicLower.contains('speaking')) return '🗣️';
+    if (topicLower.contains('listening')) return '👂';
+    if (topicLower.contains('color')) return '🎨';
+    if (topicLower.contains('number')) return '🔢';
+    if (topicLower.contains('animal')) return '🐾';
+    if (topicLower.contains('food')) return '🍕';
+
+    return '📚';
+  }
+
+  /// Calculate points based on difficulty
+  int _calculatePoints(int difficulty) {
+    switch (difficulty) {
+      case 1:
+        return 10;
+      case 2:
+        return 20;
+      case 3:
+        return 30;
+      case 4:
+        return 40;
+      case 5:
+        return 50;
+      default:
+        return 20;
+    }
   }
 
 }
