@@ -9,6 +9,11 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/greeting_helper.dart';
 import '../../classroom/widgets/classroom_info_widget.dart';
 import '../widgets/dashboard_card.dart';
+import '../../../shared/widgets/atti_mascot.dart';
+import '../../../shared/widgets/progress_bar.dart';
+import '../../../shared/widgets/achievement_badge.dart';
+import '../../lessons/widgets/mission_card.dart';
+import '../../../core/theme/adhd_theme.dart';
 
 /// Home screen with personalized greeting and user dashboard
 class HomeScreen extends StatefulWidget {
@@ -141,12 +146,10 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Text(
-              AppStrings.appName(_currentLocale),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            Image.asset(
+              'assets/images/logo/Attenglish_Logo.png',
+              height: 80,
+              fit: BoxFit.contain,
             ),
           ],
         ),
@@ -370,168 +373,118 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Build student view (ADHD-friendly)
   Widget _buildStudentView() {
+    final isRTL = LocalizationService.instance.isRTL;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Mascot with personalized message
-        MascotWidget(
-          message: GreetingHelper.getMascotMessage(
-            _currentLocale,
-            _userData!.userName,
-          ),
-          size: 120,
-        ),
-        const SizedBox(height: AppTheme.spacingXLarge),
-
-        // Welcome card
-        Card(
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingLarge),
-            child: Column(
-              children: [
-                Text(
-                  AppStrings.welcomeToAttEnglish(_currentLocale),
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppTheme.spacingMedium),
-                Text(
-                  '${AppStrings.loggedInAs(_currentLocale)} ${_userData!.email}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppTheme.spacingXLarge),
-
-        // Classroom info section (only for students)
-        if (_userData!.role == 'student') ...[
-          const ClassroomInfoWidget(),
-          const SizedBox(height: AppTheme.spacingXLarge),
-        ],
-
-        // User info section
-        _buildInfoCard(
-          LocalizationService.instance.isRTL ? 'מידע אישי' : 'Personal Information',
-          [
-            _buildInfoRow(
-              LocalizationService.instance.isRTL ? 'שם מלא' : 'Full Name',
-              _userData!.fullName,
-            ),
-            _buildInfoRow(
-              LocalizationService.instance.isRTL ? 'שם משתמש' : 'Username',
+        // 1. Large Atti mascot with greeting
+        Center(
+          child: AttiMascot(
+            message: GreetingHelper.getMascotMessage(
+              _currentLocale,
               _userData!.userName,
             ),
-            _buildInfoRow(
-              LocalizationService.instance.isRTL ? 'בית ספר' : 'School',
-              _userData!.schoolName,
+            size: AttiSize.large,
+            showSpeechBubble: true,
+          ),
+        ),
+        const SizedBox(height: ADHDTheme.spacingXLarge),
+
+        // 2. Progress bar section
+        StudentProgressBar(
+          level: 3, // TODO: Get from user data
+          currentXP: 250, // TODO: Get from user data
+          maxXP: 500, // TODO: Calculate based on level
+          streakDays: 5, // TODO: Get from user data
+        ),
+        const SizedBox(height: ADHDTheme.spacingXLarge),
+
+        // 3. Classroom info (only for students)
+        if (_userData!.role == 'student') ...[
+          const ClassroomInfoWidget(),
+          const SizedBox(height: ADHDTheme.spacingXLarge),
+        ],
+
+        // 4. Today's Mission section header
+        Row(
+          children: [
+            Text(
+              '🎯',
+              style: const TextStyle(fontSize: 32),
             ),
-            _buildInfoRow(
-              LocalizationService.instance.isRTL ? 'עיר' : 'City',
-              _userData!.city,
+            const SizedBox(width: ADHDTheme.spacingSmall),
+            Text(
+              isRTL ? 'המשימה שלך היום' : 'Today\'s Mission',
+              style: ADHDTheme.studentTextTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: ADHDTheme.textPrimary,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: AppTheme.spacingXLarge),
+        const SizedBox(height: ADHDTheme.spacingMedium),
 
-        // Placeholder for lessons
-        Card(
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingLarge),
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.construction,
-                  size: 64,
-                  color: AppColors.accent,
+        // 5. Mission cards (placeholder data)
+        MissionCard(
+          icon: '📚',
+          title: isRTL ? 'שיעור חדש: צבעים' : 'New Lesson: Colors',
+          subtitle: isRTL ? 'למד 10 מילים חדשות של צבעים!' : 'Learn 10 new color words!',
+          durationMinutes: 5,
+          points: 20,
+          type: MissionType.lesson,
+          onTap: () {
+            // TODO: Navigate to lesson
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  isRTL ? 'השיעורים יתווספו בקרוב' : 'Lessons coming soon',
                 ),
-                const SizedBox(height: AppTheme.spacingMedium),
-                Text(
-                  LocalizationService.instance.isRTL ? 'השיעורים שלך' : 'Your Lessons',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
+                backgroundColor: ADHDTheme.primaryBlue,
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: ADHDTheme.spacingMedium),
+
+        MissionCard(
+          icon: '🔄',
+          title: isRTL ? 'תרגול: מספרים' : 'Practice: Numbers',
+          subtitle: isRTL ? 'חזור על מה שלמדת' : 'Review what you learned',
+          durationMinutes: 3,
+          points: 10,
+          type: MissionType.practice,
+          onTap: () {
+            // TODO: Navigate to practice
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  isRTL ? 'תרגולים יתווספו בקרוב' : 'Practice coming soon',
                 ),
-                const SizedBox(height: AppTheme.spacingSmall),
-                Text(
-                  LocalizationService.instance.isRTL
-                      ? 'השיעורים יתווספו בקרוב...'
-                      : 'Lessons coming soon...',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+                backgroundColor: ADHDTheme.secondaryGreen,
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: ADHDTheme.spacingLarge),
+
+        // 6. Small Atti with encouragement
+        Center(
+          child: AttiMascot(
+            message: AttiMessages.getRandomEncouragement(),
+            size: AttiSize.small,
+            position: AttiPosition.left,
+            showSpeechBubble: true,
           ),
+        ),
+        const SizedBox(height: ADHDTheme.spacingXLarge),
+
+        // 7. Achievements section
+        AchievementSection(
+          achievements: Achievement.getSampleAchievements(),
         ),
       ],
     );
   }
 
-  /// Build info card
-  Widget _buildInfoCard(String title, List<Widget> children) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: AppTheme.fontSizeLarge,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppTheme.spacingMedium),
-            const Divider(),
-            const SizedBox(height: AppTheme.spacingSmall),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Build info row
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSmall),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: AppTheme.fontSizeMedium,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: AppTheme.fontSizeMedium,
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
