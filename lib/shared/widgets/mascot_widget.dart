@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Atti - The AttEnglish mascot widget
+/// Atti - The Attenglish mascot widget
 /// A friendly brain character that provides encouragement and guidance
 class MascotWidget extends StatelessWidget {
   final String? message;

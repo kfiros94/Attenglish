@@ -7,7 +7,7 @@ class AppStrings {
   static bool _isHebrew(Locale locale) => locale.languageCode == 'he';
 
   // Common strings
-  static String appName(Locale locale) => 'AttEnglish';
+  static String appName(Locale locale) => 'Attenglish';
 
   static String atti(Locale locale) => 'Atti';
 
@@ -139,7 +139,7 @@ class AppStrings {
   static String home(Locale locale) => _isHebrew(locale) ? 'בית' : 'Home';
 
   static String welcomeToAttEnglish(Locale locale) =>
-      _isHebrew(locale) ? 'ברוכים הבאים ל-AttEnglish!' : 'Welcome to AttEnglish!';
+      _isHebrew(locale) ? 'ברוכים הבאים ל-Attenglish!' : 'Welcome to Attenglish!';
 
   static String loggedInAs(Locale locale) =>
       _isHebrew(locale) ? 'מחובר בתור:' : 'Logged in as:';
