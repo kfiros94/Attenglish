@@ -5,6 +5,7 @@ import '../../auth/services/auth_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/localization_service.dart';
 import '../widgets/classroom_form_dialog.dart';
+import 'student_assignment_screen.dart';
 
 /// Screen for teachers to manage their classrooms
 class ClassroomManagementScreen extends StatefulWidget {
@@ -372,6 +373,34 @@ class _ClassroomManagementScreenState extends State<ClassroomManagementScreen> {
                     isRTL: isRTL,
                   ),
                 ],
+              ),
+              const SizedBox(height: AppTheme.spacingMedium),
+
+              // Manage Students button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            StudentAssignmentScreen(classroom: classroom),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.person_add, size: 18),
+                  label: Text(
+                    isRTL ? 'ניהול תלמידים' : 'Manage Students',
+                    style: const TextStyle(fontSize: AppTheme.fontSizeMedium),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondary,
+                    foregroundColor: AppColors.textOnPrimary,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppTheme.spacingSmall,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

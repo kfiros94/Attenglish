@@ -166,9 +166,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: AppTheme.spacingXLarge),
 
-                      // Email Label
+                      // Email or Username Label
                       Text(
-                        AppStrings.email(_currentLocale),
+                        _currentLocale.languageCode == 'he'
+                            ? 'אימייל או שם משתמש'
+                            : 'Email or Username',
                         style: const TextStyle(
                           fontSize: AppTheme.fontSizeMedium,
                           fontWeight: FontWeight.w600,
@@ -177,10 +179,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: AppTheme.spacingSmall),
 
-                      // Email field
+                      // Email or Username field
                       TextFormField(
                         controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
+                        keyboardType: TextInputType.text,
                         textInputAction: TextInputAction.next,
                         enabled: !_isLoading,
                         style: const TextStyle(
@@ -188,13 +190,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppColors.textPrimary,
                         ),
                         decoration: InputDecoration(
-                          hintText: AppStrings.emailHint(_currentLocale),
+                          hintText: _currentLocale.languageCode == 'he'
+                              ? 'הזן אימייל או שם משתמש'
+                              : 'Enter email or username',
                           prefixIcon: const Icon(
-                            Icons.email_outlined,
+                            Icons.person_outline,
                             color: AppColors.primary,
                           ),
                         ),
-                        validator: _validateEmail,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return _currentLocale.languageCode == 'he'
+                                ? 'נא להזין אימייל או שם משתמש'
+                                : 'Please enter email or username';
+                          }
+                          return null;
+                        },
                         autovalidateMode: AutovalidateMode.onUserInteraction,
                       ),
                       const SizedBox(height: AppTheme.spacingLarge),

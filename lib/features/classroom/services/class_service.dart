@@ -111,12 +111,18 @@ class ClassService {
       final querySnapshot = await _firestore
           .collection(_classesCollection)
           .where('teacherId', isEqualTo: teacherId)
-          .orderBy('createdAt', descending: true)
           .get();
 
-      return querySnapshot.docs
+      // Sort on the client side instead of using orderBy
+      // This avoids needing a Firestore composite index
+      final classes = querySnapshot.docs
           .map((doc) => ClassModel.fromJson(doc.data()))
           .toList();
+
+      // Sort by createdAt descending (newest first)
+      classes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      return classes;
     } catch (e) {
       throw Exception('Failed to get teacher classes: $e');
     }
@@ -161,11 +167,19 @@ class ClassService {
       return _firestore
           .collection(_classesCollection)
           .where('teacherId', isEqualTo: teacherId)
-          .orderBy('createdAt', descending: true)
           .snapshots()
-          .map((snapshot) => snapshot.docs
-              .map((doc) => ClassModel.fromJson(doc.data()))
-              .toList());
+          .map((snapshot) {
+        // Sort on the client side instead of using orderBy
+        // This avoids needing a Firestore composite index
+        final classes = snapshot.docs
+            .map((doc) => ClassModel.fromJson(doc.data()))
+            .toList();
+
+        // Sort by createdAt descending (newest first)
+        classes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+        return classes;
+      });
     } catch (e) {
       throw Exception('Failed to stream teacher classes: $e');
     }
