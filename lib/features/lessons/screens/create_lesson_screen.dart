@@ -5,6 +5,8 @@ import '../../classroom/models/class_model.dart';
 import '../../auth/services/auth_service.dart';
 import '../models/lesson_model.dart';
 import '../services/lesson_service.dart';
+import '../widgets/audio_upload_widget.dart';
+import '../widgets/image_upload_widget.dart';
 
 /// Screen for creating and editing lessons
 /// Professional web form with validation
@@ -31,6 +33,11 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
   int? _selectedGrade;
   int? _selectedDifficulty;
 
+  // File upload state
+  String? _audioUrl;
+  List<String> _imageUrls = [];
+  String? _tempLessonId; // For file uploads before lesson creation
+
   bool _isLoading = false;
   bool _isLoadingData = true;
   List<ClassModel> _teacherClasses = [];
@@ -39,6 +46,9 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
   @override
   void initState() {
     super.initState();
+    // Generate temp lesson ID for file uploads (before lesson creation)
+    _tempLessonId = widget.lessonId ??
+        'temp_${DateTime.now().millisecondsSinceEpoch}';
     _loadData();
   }
 
@@ -77,6 +87,8 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
           _selectedClassId = _existingLesson!.classId;
           _selectedGrade = _existingLesson!.grade;
           _selectedDifficulty = _existingLesson!.difficulty;
+          _audioUrl = _existingLesson!.audioUrl;
+          _imageUrls = List.from(_existingLesson!.imageUrls);
         }
       }
     } catch (e) {
@@ -166,6 +178,8 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
         createdAt: _existingLesson?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
         status: status,
+        audioUrl: _audioUrl,
+        imageUrls: _imageUrls,
       );
 
       if (widget.lessonId != null) {
@@ -412,6 +426,27 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
                             }
                             return null;
                           },
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Audio Upload Section
+                        AudioUploadWidget(
+                          initialAudioUrl: _audioUrl,
+                          lessonId: _tempLessonId!,
+                          onAudioChanged: (audioUrl) {
+                            setState(() => _audioUrl = audioUrl);
+                          },
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Image Upload Section
+                        ImageUploadWidget(
+                          initialImageUrls: _imageUrls,
+                          lessonId: _tempLessonId!,
+                          onImagesChanged: (imageUrls) {
+                            setState(() => _imageUrls = imageUrls);
+                          },
+                          maxImages: 10,
                         ),
                         const SizedBox(height: 32),
 
