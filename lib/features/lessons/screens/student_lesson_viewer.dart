@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/theme/adhd_theme.dart';
 import '../../../shared/widgets/atti_mascot.dart';
+import '../../../shared/widgets/simple_audio_player.dart';
 import '../models/lesson_model.dart';
 import '../services/lesson_service.dart';
 
@@ -314,6 +316,54 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
             const SizedBox(height: ADHDTheme.spacingXLarge),
           ],
 
+          // Audio player (if available)
+          if (_lesson!.audioUrl != null && _lesson!.audioUrl!.isNotEmpty) ...[
+            _buildSectionHeader('🎧 Listen to the lesson'),
+            const SizedBox(height: ADHDTheme.spacingMedium),
+
+            // Encouraging message
+            Container(
+              padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ADHDTheme.primaryBlue.withOpacity(0.1),
+                    ADHDTheme.secondaryGreen.withOpacity(0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+                border: Border.all(
+                  color: ADHDTheme.primaryBlue.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Text('🎧', style: TextStyle(fontSize: 32)),
+                  const SizedBox(width: ADHDTheme.spacingMedium),
+                  Expanded(
+                    child: Text(
+                      'Listen carefully! You can pause and replay anytime.',
+                      style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: ADHDTheme.primaryBlue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: ADHDTheme.spacingMedium),
+
+            // Audio player
+            SimpleAudioPlayer(
+              audioUrl: _lesson!.audioUrl!,
+              primaryColor: ADHDTheme.primaryBlue,
+              backgroundColor: Colors.white,
+            ),
+            const SizedBox(height: ADHDTheme.spacingXLarge),
+          ],
+
           // Main lesson content
           _buildSectionHeader('📖 Lesson'),
           const SizedBox(height: ADHDTheme.spacingMedium),
@@ -339,6 +389,26 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
             ),
           ),
           const SizedBox(height: ADHDTheme.spacingXLarge),
+
+          // Images gallery (if available)
+          if (_lesson!.imageUrls.isNotEmpty) ...[
+            _buildSectionHeader('🖼️ Lesson images'),
+            const SizedBox(height: ADHDTheme.spacingMedium),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 300,
+                crossAxisSpacing: ADHDTheme.spacingMedium,
+                mainAxisSpacing: ADHDTheme.spacingMedium,
+              ),
+              itemCount: _lesson!.imageUrls.length,
+              itemBuilder: (context, index) {
+                return _buildImageCard(_lesson!.imageUrls[index]);
+              },
+            ),
+            const SizedBox(height: ADHDTheme.spacingXLarge),
+          ],
 
           // Encouraging message from Atti
           Container(
@@ -463,5 +533,149 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
       default:
         return ADHDTheme.textSecondary;
     }
+  }
+
+  /// Build image card with tap to view full size
+  Widget _buildImageCard(String imageUrl) {
+    return GestureDetector(
+      onTap: () {
+        // Show full-size image in dialog
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.black87,
+            insetPadding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              height: MediaQuery.of(context).size.height * 0.9,
+              child: Stack(
+                children: [
+                  Center(
+                    child: InteractiveViewer(
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(
+                            color: ADHDTheme.primaryBlue,
+                          ),
+                        ),
+                        errorWidget: (context, url, error) {
+                          print('Full-size image error: $error');
+                          print('URL: $url');
+                          return const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.error, color: Colors.white, size: 48),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Failed to load image',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black54,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+          border: Border.all(
+            color: ADHDTheme.primaryBlue.withOpacity(0.2),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium - 2),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: ADHDTheme.primaryBlue.withOpacity(0.1),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: ADHDTheme.primaryBlue,
+                      strokeWidth: 3,
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) {
+                  print('Image thumbnail error for URL: $url');
+                  print('Error: $error');
+                  return Container(
+                    color: Colors.red.withOpacity(0.1),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error, color: Colors.red, size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Failed to load',
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              // Tap to expand overlay
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.zoom_in,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

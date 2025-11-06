@@ -14,6 +14,8 @@ class LessonModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final String status; // 'draft' or 'published'
+  final String? audioUrl; // Firebase Storage URL for audio file
+  final List<String> imageUrls; // List of image URLs from Firebase Storage
 
   const LessonModel({
     required this.id,
@@ -28,6 +30,8 @@ class LessonModel {
     required this.createdAt,
     this.updatedAt,
     required this.status,
+    this.audioUrl,
+    this.imageUrls = const [],
   });
 
   /// Create LessonModel from Firestore JSON
@@ -47,6 +51,11 @@ class LessonModel {
           ? (json['updatedAt'] as Timestamp).toDate()
           : null,
       status: json['status'] as String,
+      audioUrl: json['audioUrl'] as String?,
+      imageUrls: (json['imageUrls'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
     );
   }
 
@@ -65,6 +74,8 @@ class LessonModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'status': status,
+      'audioUrl': audioUrl,
+      'imageUrls': imageUrls,
     };
   }
 
@@ -82,6 +93,8 @@ class LessonModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? status,
+    String? audioUrl,
+    List<String>? imageUrls,
   }) {
     return LessonModel(
       id: id ?? this.id,
@@ -96,6 +109,8 @@ class LessonModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       status: status ?? this.status,
+      audioUrl: audioUrl ?? this.audioUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
     );
   }
 

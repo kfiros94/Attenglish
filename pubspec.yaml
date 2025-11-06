@@ -52,6 +52,15 @@ dependencies:
   # Local storage
   shared_preferences: ^2.2.2
 
+  # File picker
+  file_picker: ^8.1.6
+
+  # Image caching and display
+  cached_network_image: ^3.4.1
+
+  # Audio player
+  audioplayers: ^6.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
