@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'activity_model.dart';
 
 /// Lesson model for storing lesson data
 class LessonModel {
@@ -16,6 +17,7 @@ class LessonModel {
   final String status; // 'draft' or 'published'
   final String? audioUrl; // Firebase Storage URL for audio file
   final List<String> imageUrls; // List of image URLs from Firebase Storage
+  final List<ActivityModel> activities; // List of activities/exercises
 
   const LessonModel({
     required this.id,
@@ -32,6 +34,7 @@ class LessonModel {
     required this.status,
     this.audioUrl,
     this.imageUrls = const [],
+    this.activities = const [],
   });
 
   /// Create LessonModel from Firestore JSON
@@ -56,6 +59,10 @@ class LessonModel {
               ?.map((e) => e as String)
               .toList() ??
           [],
+      activities: (json['activities'] as List<dynamic>?)
+              ?.map((a) => ActivityModel.fromJson(a as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -76,6 +83,7 @@ class LessonModel {
       'status': status,
       'audioUrl': audioUrl,
       'imageUrls': imageUrls,
+      'activities': activities.map((a) => a.toJson()).toList(),
     };
   }
 
@@ -95,6 +103,7 @@ class LessonModel {
     String? status,
     String? audioUrl,
     List<String>? imageUrls,
+    List<ActivityModel>? activities,
   }) {
     return LessonModel(
       id: id ?? this.id,
@@ -111,6 +120,7 @@ class LessonModel {
       status: status ?? this.status,
       audioUrl: audioUrl ?? this.audioUrl,
       imageUrls: imageUrls ?? this.imageUrls,
+      activities: activities ?? this.activities,
     );
   }
 

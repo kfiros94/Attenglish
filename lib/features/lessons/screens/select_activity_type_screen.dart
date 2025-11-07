@@ -1,0 +1,208 @@
+import 'package:flutter/material.dart';
+import '../models/activity_model.dart';
+import 'add_multiple_choice_screen.dart';
+
+/// Screen where teacher chooses which type of activity to create
+class SelectActivityTypeScreen extends StatelessWidget {
+  const SelectActivityTypeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Choose Activity Type'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Multiple Choice Card
+            _buildActivityTypeCard(
+              context: context,
+              icon: Icons.radio_button_checked,
+              iconColor: Colors.blue,
+              title: 'Multiple Choice',
+              subtitle: 'Ask a question with 4 options',
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddMultipleChoiceScreen(),
+                  ),
+                );
+                if (result != null && result is ActivityModel) {
+                  Navigator.pop(context, result);
+                }
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            // Fill in the Blank Card
+            _buildActivityTypeCard(
+              context: context,
+              icon: Icons.edit,
+              iconColor: Colors.green,
+              title: 'Fill in the Blank',
+              subtitle: 'Complete the missing word',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('This screen will be built in the next step!'),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            // True or False Card
+            _buildActivityTypeCard(
+              context: context,
+              icon: Icons.check_circle,
+              iconColor: Colors.orange,
+              title: 'True or False',
+              subtitle: 'Simple yes/no question',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('This screen will be built in the next step!'),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            // Drag & Drop Card
+            _buildActivityTypeCard(
+              context: context,
+              icon: Icons.swap_horiz,
+              iconColor: Colors.purple,
+              title: 'Drag & Drop',
+              subtitle: 'Match items together',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('This screen will be built in the next step!'),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            // AI Generated Card (Coming Soon - disabled)
+            Opacity(
+              opacity: 0.5,
+              child: Stack(
+                children: [
+                  _buildActivityTypeCard(
+                    context: context,
+                    icon: Icons.auto_awesome,
+                    iconColor: Colors.grey,
+                    title: 'AI Generated',
+                    subtitle: 'Coming Soon in Step 4!',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('AI generation coming in Step 4!'),
+                          backgroundColor: Colors.purple,
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.purple,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'SOON',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityTypeCard({
+    required BuildContext context,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Icon
+              Icon(
+                icon,
+                size: 48,
+                color: iconColor,
+              ),
+              const SizedBox(width: 16),
+
+              // Title and subtitle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Arrow icon
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey.shade400,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
