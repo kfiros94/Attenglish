@@ -4,9 +4,11 @@ import '../../classroom/services/class_service.dart';
 import '../../classroom/models/class_model.dart';
 import '../../auth/services/auth_service.dart';
 import '../models/lesson_model.dart';
+import '../models/activity_model.dart';
 import '../services/lesson_service.dart';
 import '../widgets/audio_upload_widget.dart';
 import '../widgets/image_upload_widget.dart';
+import 'select_activity_type_screen.dart';
 
 /// Screen for creating and editing lessons
 /// Professional web form with validation
@@ -37,6 +39,9 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
   String? _audioUrl;
   List<String> _imageUrls = [];
   String? _tempLessonId; // For file uploads before lesson creation
+
+  // Activities state
+  List<ActivityModel> _activities = [];
 
   bool _isLoading = false;
   bool _isLoadingData = true;
@@ -89,6 +94,7 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
           _selectedDifficulty = _existingLesson!.difficulty;
           _audioUrl = _existingLesson!.audioUrl;
           _imageUrls = List.from(_existingLesson!.imageUrls);
+          _activities = List.from(_existingLesson!.activities);
         }
       }
     } catch (e) {
@@ -180,6 +186,7 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
         status: status,
         audioUrl: _audioUrl,
         imageUrls: _imageUrls,
+        activities: _activities,
       );
 
       if (widget.lessonId != null) {
@@ -447,6 +454,126 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
                             setState(() => _imageUrls = imageUrls);
                           },
                           maxImages: 10,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Activities Section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.sports_esports,
+                                    color: Colors.purple),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Lesson Activities',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                              ],
+                            ),
+                            Chip(
+                              label: Text('${_activities.length} activities'),
+                              backgroundColor: Colors.purple.shade50,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add interactive exercises to help students practice (optional)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // List of added activities
+                        if (_activities.isNotEmpty)
+                          ...List.generate(_activities.length, (index) {
+                            final activity = _activities[index];
+
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: Text(
+                                  activity.typeIcon,
+                                  style: const TextStyle(fontSize: 24),
+                                ),
+                                title: Text(
+                                  activity.question,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  '${activity.typeLabel} • ${activity.points} points',
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.blue),
+                                      onPressed: () {
+                                        // TODO: Edit activity in next step
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                'Edit functionality coming in next step!'),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.red),
+                                      onPressed: () {
+                                        setState(() {
+                                          _activities.removeAt(index);
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+
+                        const SizedBox(height: 16),
+
+                        // Add Activity Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const SelectActivityTypeScreen(),
+                                ),
+                              );
+
+                              if (result != null && result is ActivityModel) {
+                                setState(() {
+                                  _activities.add(result);
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Activity'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                  color: Colors.purple, width: 2),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 32),
 
