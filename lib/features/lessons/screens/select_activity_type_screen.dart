@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/activity_model.dart';
 import 'add_multiple_choice_screen.dart';
+import 'add_fill_blank_screen.dart';
+import 'add_true_false_screen.dart';
 
 /// Screen where teacher chooses which type of activity to create
 class SelectActivityTypeScreen extends StatelessWidget {
@@ -46,12 +48,16 @@ class SelectActivityTypeScreen extends StatelessWidget {
               iconColor: Colors.green,
               title: 'Fill in the Blank',
               subtitle: 'Complete the missing word',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('This screen will be built in the next step!'),
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddFillBlankScreen(),
                   ),
                 );
+                if (result != null && result is ActivityModel) {
+                  Navigator.pop(context, result);
+                }
               },
             ),
 
@@ -64,12 +70,16 @@ class SelectActivityTypeScreen extends StatelessWidget {
               iconColor: Colors.orange,
               title: 'True or False',
               subtitle: 'Simple yes/no question',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('This screen will be built in the next step!'),
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddTrueFalseScreen(),
                   ),
                 );
+                if (result != null && result is ActivityModel) {
+                  Navigator.pop(context, result);
+                }
               },
             ),
 
