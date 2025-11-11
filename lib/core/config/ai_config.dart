@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// Configuration class for Claude AI API integration
 ///
 /// This class manages all settings and configurations related to
@@ -40,26 +42,21 @@ class AiConfig {
   /// Used for quota management
   static const int freeGenerationsPerMonth = 50;
 
-  /// Retrieves the Anthropic API key from environment variables
+  /// Retrieves the Anthropic API key from .env file
   ///
-  /// The API key must be provided via --dart-define during app launch:
-  /// ```
-  /// flutter run --dart-define=ANTHROPIC_API_KEY=your_key_here
-  /// ```
+  /// The API key is loaded from the .env file at the root of the project.
+  /// Make sure to create a .env file with ANTHROPIC_API_KEY=your_key
   ///
   /// Returns the configured API key
   ///
   /// Throws [Exception] if the API key is not configured
   static String getApiKey() {
-    const apiKey = String.fromEnvironment(
-      'ANTHROPIC_API_KEY',
-      defaultValue: '',
-    );
+    final apiKey = dotenv.env['ANTHROPIC_API_KEY'] ?? '';
 
     if (apiKey.isEmpty) {
       throw Exception(
         'Anthropic API key not configured. '
-        'Run with: flutter run --dart-define=ANTHROPIC_API_KEY=your_key',
+        'Please create a .env file with ANTHROPIC_API_KEY=your_key',
       );
     }
 
