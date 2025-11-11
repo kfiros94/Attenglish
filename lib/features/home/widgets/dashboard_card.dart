@@ -40,7 +40,7 @@ class _DashboardCardState extends State<DashboardCard> {
           onTap: widget.onTap,
           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
           child: Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingMedium),
+            padding: const EdgeInsets.all(AppTheme.spacingSmall),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -50,7 +50,7 @@ class _DashboardCardState extends State<DashboardCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(AppTheme.spacingSmall),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: widget.iconColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
@@ -58,14 +58,14 @@ class _DashboardCardState extends State<DashboardCard> {
                       child: Icon(
                         widget.icon,
                         color: widget.iconColor,
-                        size: 28,
+                        size: 24,
                       ),
                     ),
                     if (widget.badgeText != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: AppTheme.spacingSmall,
-                          vertical: 4,
+                          horizontal: 6,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: widget.iconColor,
@@ -75,37 +75,42 @@ class _DashboardCardState extends State<DashboardCard> {
                           widget.badgeText!,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: AppTheme.fontSizeSmall,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: AppTheme.spacingMedium),
+                const SizedBox(height: 8),
 
                 // Title
                 Text(
                   widget.title,
                   style: const TextStyle(
-                    fontSize: AppTheme.fontSizeMedium,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
-                ),
-                const SizedBox(height: AppTheme.spacingSmall),
-
-                // Description
-                Text(
-                  widget.description,
-                  style: const TextStyle(
-                    fontSize: AppTheme.fontSizeSmall,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: AppTheme.spacingMedium),
+                const SizedBox(height: 4),
+
+                // Description
+                Flexible(
+                  child: Text(
+                    widget.description,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 6),
 
                 // Action indicator
                 Row(
@@ -113,7 +118,7 @@ class _DashboardCardState extends State<DashboardCard> {
                     Text(
                       'View',
                       style: TextStyle(
-                        fontSize: AppTheme.fontSizeSmall,
+                        fontSize: 11,
                         color: widget.iconColor,
                         fontWeight: FontWeight.w600,
                       ),
@@ -121,7 +126,7 @@ class _DashboardCardState extends State<DashboardCard> {
                     const SizedBox(width: 4),
                     Icon(
                       Icons.arrow_forward,
-                      size: 16,
+                      size: 14,
                       color: widget.iconColor,
                     ),
                   ],
