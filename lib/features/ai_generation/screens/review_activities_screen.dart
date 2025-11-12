@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/ai_response_model.dart';
 import '../../lessons/models/activity_model.dart';
+import '../../lessons/models/lesson_model.dart';
+import '../../lessons/services/lesson_service.dart';
+import '../../classroom/services/class_service.dart';
+import '../../classroom/models/class_model.dart';
 
 /// Screen for reviewing AI-generated activities before adding to lesson
 ///
@@ -160,6 +165,341 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
       SnackBar(
         content: Text('${selectedActivities.length} activities added to lesson'),
         backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  /// Save selected activities as a standalone lesson
+  Future<void> _onSaveAsLesson() async {
+    // Get selected activities
+    final selectedActivities = <ActivityModel>[];
+    for (int i = 0; i < _activities.length; i++) {
+      if (_selectedActivities[i]) {
+        selectedActivities.add(_activities[i]);
+      }
+    }
+
+    // Check if any activities are selected
+    if (selectedActivities.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one activity'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Show dialog to collect lesson details
+    await _showSaveAsLessonDialog(selectedActivities);
+  }
+
+  /// Show dialog to collect lesson details before saving
+  Future<void> _showSaveAsLessonDialog(List<ActivityModel> activities) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must be logged in to save lessons'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Load teacher's classes
+    List<ClassModel> classes = [];
+    try {
+      classes = await ClassService.instance.getTeacherClasses(user.uid);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading classes: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (classes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please create a class first before saving lessons'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Controllers for dialog
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    ClassModel? selectedClass = classes.first;
+    String selectedStatus = 'draft';
+    int selectedGrade = 3;
+    int selectedDifficulty = 2;
+
+    // Suggest a default title based on source text
+    titleController.text = 'AI Generated Lesson';
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Save as Lesson'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Lesson Title
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Lesson Title *',
+                    hintText: 'Enter lesson title',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Description
+                TextField(
+                  controller: descriptionController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (optional)',
+                    hintText: 'Brief description of the lesson',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Class Selection
+                DropdownButtonFormField<ClassModel>(
+                  value: selectedClass,
+                  decoration: const InputDecoration(
+                    labelText: 'Class *',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: classes
+                      .map((classModel) => DropdownMenuItem(
+                            value: classModel,
+                            child: Text(classModel.name),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      selectedClass = value;
+                      if (value != null) {
+                        selectedGrade = value.grade;
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Grade (auto-filled from class)
+                DropdownButtonFormField<int>(
+                  value: selectedGrade,
+                  decoration: const InputDecoration(
+                    labelText: 'Grade',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: List.generate(
+                    12,
+                    (index) => DropdownMenuItem(
+                      value: index + 1,
+                      child: Text('Grade ${index + 1}'),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      selectedGrade = value ?? 3;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Difficulty
+                DropdownButtonFormField<int>(
+                  value: selectedDifficulty,
+                  decoration: const InputDecoration(
+                    labelText: 'Difficulty',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 1, child: Text('1 - Beginner')),
+                    DropdownMenuItem(value: 2, child: Text('2 - Easy')),
+                    DropdownMenuItem(value: 3, child: Text('3 - Medium')),
+                    DropdownMenuItem(value: 4, child: Text('4 - Hard')),
+                    DropdownMenuItem(value: 5, child: Text('5 - Expert')),
+                  ],
+                  onChanged: (value) {
+                    setDialogState(() {
+                      selectedDifficulty = value ?? 2;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Status (Draft or Published)
+                DropdownButtonFormField<String>(
+                  value: selectedStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Status',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'draft', child: Text('Draft (not visible to students)')),
+                    DropdownMenuItem(value: 'published', child: Text('Published (visible to students)')),
+                  ],
+                  onChanged: (value) {
+                    setDialogState(() {
+                      selectedStatus = value ?? 'draft';
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Info about what will be saved
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Lesson will include:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text('• ${activities.length} activities'),
+                      Text('• Source text as lesson content'),
+                      Text('• Total points: ${activities.fold(0, (sum, a) => sum + a.points)}'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (titleController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a lesson title'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+
+                if (selectedClass == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please select a class'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+
+                // Store navigator before async operations
+                final navigator = Navigator.of(context);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+                // Close the form dialog
+                navigator.pop();
+
+                // Show loading
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (loadingContext) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+
+                try {
+                  // Create lesson model
+                  final lesson = LessonModel(
+                    id: '', // Will be set by Firebase
+                    title: titleController.text.trim(),
+                    description: descriptionController.text.trim().isEmpty
+                        ? null
+                        : descriptionController.text.trim(),
+                    classId: selectedClass!.id,
+                    teacherId: user.uid,
+                    grade: selectedGrade,
+                    difficulty: selectedDifficulty,
+                    topic: 'AI Generated',
+                    textContent: widget.response.sourceText,
+                    createdAt: DateTime.now(),
+                    status: selectedStatus,
+                    activities: activities,
+                  );
+
+                  // Save to Firebase
+                  final lessonId = await LessonService.instance.createLesson(lesson);
+
+                  // Close loading dialog
+                  if (mounted) {
+                    navigator.pop();
+
+                    // Show success
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          selectedStatus == 'published'
+                              ? 'Lesson published! Students can now see it.'
+                              : 'Lesson saved as draft.',
+                        ),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+
+                    // Return to previous screen (AI generator screen)
+                    navigator.pop();
+                  }
+                } catch (e) {
+                  // Close loading dialog
+                  if (mounted) {
+                    navigator.pop();
+
+                    // Show error
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text('Error saving lesson: $e'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save Lesson'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -378,24 +718,45 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
       shape: const RoundedRectangleBorder(),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                const Spacer(),
+                Text(
+                  '${_getSelectedCount()} selected',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
             ),
-            const Spacer(),
-            Text(
-              '${_getSelectedCount()} selected',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(width: 16),
-            Flexible(
-              child: ElevatedButton.icon(
-                onPressed: _onAddToLesson,
-                icon: const Icon(Icons.add_circle),
-                label: const Text('Add to Lesson'),
-              ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _onSaveAsLesson,
+                    icon: const Icon(Icons.save),
+                    label: const Text('Save as Lesson'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _onAddToLesson,
+                    icon: const Icon(Icons.add_circle),
+                    label: const Text('Add to Existing'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

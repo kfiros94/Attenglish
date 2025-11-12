@@ -3,6 +3,7 @@ import '../models/activity_model.dart';
 import 'add_multiple_choice_screen.dart';
 import 'add_fill_blank_screen.dart';
 import 'add_true_false_screen.dart';
+import '../../ai_generation/screens/ai_generator_screen.dart';
 
 /// Screen where teacher chooses which type of activity to create
 class SelectActivityTypeScreen extends StatelessWidget {
@@ -103,50 +104,25 @@ class SelectActivityTypeScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // AI Generated Card (Coming Soon - disabled)
-            Opacity(
-              opacity: 0.5,
-              child: Stack(
-                children: [
-                  _buildActivityTypeCard(
-                    context: context,
-                    icon: Icons.auto_awesome,
-                    iconColor: Colors.grey,
-                    title: 'AI Generated',
-                    subtitle: 'Coming Soon in Step 4!',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('AI generation coming in Step 4!'),
-                          backgroundColor: Colors.purple,
-                        ),
-                      );
-                    },
+            // AI Generated Card
+            _buildActivityTypeCard(
+              context: context,
+              icon: Icons.auto_awesome,
+              iconColor: Colors.purple,
+              title: 'AI Generated',
+              subtitle: 'Generate activities from text using AI',
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AiGeneratorScreen(),
                   ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.purple,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        'SOON',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                );
+                // If activities were generated, pass them back
+                if (result != null && result is List<ActivityModel>) {
+                  Navigator.pop(context, result);
+                }
+              },
             ),
           ],
         ),

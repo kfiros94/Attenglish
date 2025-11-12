@@ -158,6 +158,7 @@ class ClaudeAiService {
         totalActivities: activities.length,
         generationTime: generationTime,
         metadata: metadata,
+        sourceText: sourceText,
       );
     } on AiGenerationException {
       rethrow; // Pass through our custom exceptions

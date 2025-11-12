@@ -121,6 +121,9 @@ class AiGenerationResponse {
   /// Additional metadata about the generation
   final Map<String, dynamic> metadata;
 
+  /// The original source text used to generate activities
+  final String sourceText;
+
   /// Creates a new AI generation response
   const AiGenerationResponse({
     required this.activities,
@@ -129,6 +132,7 @@ class AiGenerationResponse {
     required this.totalActivities,
     required this.generationTime,
     required this.metadata,
+    required this.sourceText,
   });
 
   /// Creates a response from Claude API JSON
@@ -154,6 +158,7 @@ class AiGenerationResponse {
   factory AiGenerationResponse.fromJson(
     Map<String, dynamic> json,
     Duration generationTime,
+    String sourceText,
   ) {
     // Parse activities
     final activitiesJson = json['activities'] as List<dynamic>? ?? [];
@@ -186,6 +191,7 @@ class AiGenerationResponse {
       totalActivities: activities.length,
       generationTime: generationTime,
       metadata: metadata,
+      sourceText: sourceText,
     );
   }
 

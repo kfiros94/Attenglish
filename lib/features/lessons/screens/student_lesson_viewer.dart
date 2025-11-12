@@ -6,7 +6,7 @@ import '../../../shared/widgets/simple_audio_player.dart';
 import '../models/lesson_model.dart';
 import '../models/activity_model.dart';
 import '../services/lesson_service.dart';
-import '../widgets/activities/activity_widget.dart';
+import 'student_activity_player_screen.dart';
 
 /// ADHD-friendly lesson viewer for students
 /// Large text, clear sections, encouraging feedback
@@ -27,12 +27,7 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
   bool _isLoading = true;
   String? _errorMessage;
   bool _showCelebration = false;
-
-  // Activity navigation state
-  int _currentActivityIndex = 0;
-  bool _hasStartedActivities = false;
   int _totalPointsEarned = 0;
-  final Map<int, bool> _activityAnswered = {}; // Track which activities have been answered
 
   @override
   void initState() {
@@ -71,32 +66,73 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
     });
   }
 
-  /// Start activities
-  void _startActivities() {
-    setState(() {
-      _hasStartedActivities = true;
-    });
+  /// Calculate total points from all activities
+  int _getTotalPoints() {
+    return _lesson!.activities.fold(0, (sum, activity) => sum + activity.points);
   }
 
-  /// Handle activity answered
-  void _onActivityAnswered(bool isCorrect, int points) {
-    setState(() {
-      _activityAnswered[_currentActivityIndex] = true;
-      if (isCorrect) {
-        _totalPointsEarned += points;
-      }
-    });
+  /// Get activity type label
+  String _getActivityTypeLabel(String type) {
+    switch (type) {
+      case 'multiple_choice':
+        return 'Multiple Choice';
+      case 'fill_blank':
+        return 'Fill in the Blank';
+      case 'true_false':
+        return 'True or False';
+      case 'drag_drop':
+        return 'Drag & Drop';
+      default:
+        return 'Activity';
+    }
   }
 
-  /// Go to next activity
-  void _nextActivity() {
-    if (_currentActivityIndex < _lesson!.activities.length - 1) {
+  /// Get activity color based on type
+  Color _getActivityColor(String type) {
+    switch (type) {
+      case 'multiple_choice':
+        return Colors.blue;
+      case 'fill_blank':
+        return Colors.green;
+      case 'true_false':
+        return Colors.orange;
+      case 'drag_drop':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Start activities - navigate to Activity Player Screen
+  Future<void> _startActivities() async {
+    final score = await Navigator.of(context).push<int>(
+      MaterialPageRoute(
+        builder: (context) => StudentActivityPlayerScreen(
+          activities: _lesson!.activities,
+          lessonTitle: _lesson!.title,
+        ),
+      ),
+    );
+
+    // Show score feedback if activities were completed
+    if (score != null && mounted) {
       setState(() {
-        _currentActivityIndex++;
+        _totalPointsEarned = score;
       });
-    } else {
-      // All activities completed
-      _completeLesson();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.emoji_events, color: Colors.amber),
+              const SizedBox(width: 8),
+              Text('You earned $score points!'),
+            ],
+          ),
+          backgroundColor: ADHDTheme.successGreen,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -474,18 +510,12 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
 
           // Activities Section (if available)
           if (_lesson!.activities.isNotEmpty) ...[
-            if (!_hasStartedActivities)
-              _buildActivitiesIntro()
-            else
-              _buildActivitySection(),
+            _buildActivitiesSection(),
             const SizedBox(height: ADHDTheme.spacingXLarge),
           ],
 
-          // Big completion button (only show if no activities or all completed)
-          if (_lesson!.activities.isEmpty ||
-              (_hasStartedActivities &&
-                  _currentActivityIndex >= _lesson!.activities.length - 1 &&
-                  _activityAnswered[_currentActivityIndex] == true))
+          // Big completion button (only show if no activities)
+          if (_lesson!.activities.isEmpty)
           ElevatedButton(
             onPressed: _completeLesson,
             style: ElevatedButton.styleFrom(
@@ -729,93 +759,67 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
     );
   }
 
-  /// Build activities intro section
-  Widget _buildActivitiesIntro() {
+  /// Build activities section with preview list
+  Widget _buildActivitiesSection() {
+    final totalPoints = _getTotalPoints();
+
     return Container(
       padding: const EdgeInsets.all(ADHDTheme.spacingLarge),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            ADHDTheme.accentOrange.withOpacity(0.2),
-            ADHDTheme.primaryBlue.withOpacity(0.2),
-          ],
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
-        border: Border.all(
-          color: ADHDTheme.accentOrange.withOpacity(0.5),
-          width: 2,
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header
+          // Activities header
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('🎯', style: TextStyle(fontSize: 40)),
-              const SizedBox(width: ADHDTheme.spacingSmall),
-              Text(
-                'Practice Time!',
-                style: ADHDTheme.studentTextTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: ADHDTheme.accentOrange,
-                ),
+              Icon(
+                Icons.quiz,
+                color: ADHDTheme.accentOrange,
+                size: 32,
               ),
-            ],
-          ),
-          const SizedBox(height: ADHDTheme.spacingMedium),
-
-          // Atti message
-          Row(
-            children: [
-              const Text('👋', style: TextStyle(fontSize: 32)),
-              const SizedBox(width: ADHDTheme.spacingSmall),
+              const SizedBox(width: ADHDTheme.spacingMedium),
               Expanded(
-                child: Text(
-                  '"Let\'s practice what you learned!"',
-                  style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
-                    fontStyle: FontStyle.italic,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Activities',
+                      style: ADHDTheme.studentTextTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: ADHDTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${_lesson!.activities.length} activities • $totalPoints points',
+                      style: ADHDTheme.studentTextTheme.bodyMedium?.copyWith(
+                        color: ADHDTheme.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: ADHDTheme.spacingMedium),
-
-          // Activity count
-          Container(
-            padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(ADHDTheme.radiusSmall),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.sports_esports, color: ADHDTheme.primaryBlue),
-                const SizedBox(width: ADHDTheme.spacingSmall),
-                Text(
-                  '${_lesson!.activities.length} activities to complete',
-                  style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: ADHDTheme.spacingLarge),
 
-          // Start button
+          // Start Activities button
           SizedBox(
-            width: double.infinity,
+            height: 56,
             child: ElevatedButton(
               onPressed: _startActivities,
               style: ElevatedButton.styleFrom(
-                backgroundColor: ADHDTheme.accentOrange,
+                backgroundColor: ADHDTheme.successGreen,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  vertical: ADHDTheme.spacingMedium,
-                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
                 ),
@@ -823,7 +827,7 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.play_arrow, size: 28),
+                  const Icon(Icons.play_arrow, size: 24),
                   const SizedBox(width: ADHDTheme.spacingSmall),
                   Text(
                     'Start Activities',
@@ -836,124 +840,113 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
               ),
             ),
           ),
+          const SizedBox(height: ADHDTheme.spacingLarge),
+
+          // Activity preview list
+          ...List.generate(
+            _lesson!.activities.length,
+            (index) => _buildActivityPreview(_lesson!.activities[index], index),
+          ),
         ],
       ),
     );
   }
 
-  /// Build activity section with navigation
-  Widget _buildActivitySection() {
-    final activity = _lesson!.activities[_currentActivityIndex];
-    final hasAnswered = _activityAnswered[_currentActivityIndex] ?? false;
-    final isLastActivity = _currentActivityIndex >= _lesson!.activities.length - 1;
+  /// Build activity preview tile
+  Widget _buildActivityPreview(ActivityModel activity, int index) {
+    final color = _getActivityColor(activity.type);
+    final label = _getActivityTypeLabel(activity.type);
 
-    return Container(
-      padding: const EdgeInsets.all(ADHDTheme.spacingLarge),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
-        boxShadow: [
-          BoxShadow(
-            color: ADHDTheme.accentOrange.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: ADHDTheme.spacingMedium),
+      child: Container(
+        padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(ADHDTheme.radiusSmall),
+          border: Border.all(
+            color: color.withOpacity(0.3),
+            width: 2,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('🎯', style: TextStyle(fontSize: 32)),
-              const SizedBox(width: ADHDTheme.spacingSmall),
-              Text(
-                'Practice Time!',
-                style: ADHDTheme.studentTextTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: ADHDTheme.accentOrange,
-                ),
+        ),
+        child: Row(
+          children: [
+            // Activity number badge
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
               ),
-            ],
-          ),
-          const SizedBox(height: ADHDTheme.spacingSmall),
-
-          // Progress text
-          Text(
-            'Activity ${_currentActivityIndex + 1} of ${_lesson!.activities.length}',
-            style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
-              color: ADHDTheme.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: ADHDTheme.spacingSmall),
-
-          // Progress dots
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              _lesson!.activities.length,
-              (index) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: index <= _currentActivityIndex
-                      ? ADHDTheme.accentOrange
-                      : ADHDTheme.textSecondary.withOpacity(0.3),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: ADHDTheme.spacingLarge),
-
-          // Activity widget
-          ActivityWidget(
-            key: ValueKey(_currentActivityIndex), // Force widget to rebuild when activity changes
-            activity: activity,
-            onAnswered: _onActivityAnswered,
-          ),
-
-          // Next button (only show after answering)
-          if (hasAnswered) ...[
-            const SizedBox(height: ADHDTheme.spacingLarge),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _nextActivity,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isLastActivity
-                      ? ADHDTheme.successGreen
-                      : ADHDTheme.primaryBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+              child: Center(
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      isLastActivity ? 'Finish Activities! 🎉' : 'Next Activity',
-                      style: ADHDTheme.studentTextTheme.headlineSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+              ),
+            ),
+            const SizedBox(width: ADHDTheme.spacingMedium),
+
+            // Activity info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: ADHDTheme.textPrimary,
                     ),
-                    if (!isLastActivity) ...[
-                      const SizedBox(width: ADHDTheme.spacingSmall),
-                      const Icon(Icons.arrow_forward, size: 24),
-                    ],
-                  ],
-                ),
+                  ),
+                  if (activity.question.isNotEmpty)
+                    Text(
+                      activity.question.length > 50
+                          ? '${activity.question.substring(0, 50)}...'
+                          : activity.question,
+                      style: ADHDTheme.studentTextTheme.bodySmall?.copyWith(
+                        color: ADHDTheme.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+
+            // Points badge
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: ADHDTheme.spacingSmall,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(ADHDTheme.radiusCircle),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star, color: Colors.white, size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${activity.points}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
