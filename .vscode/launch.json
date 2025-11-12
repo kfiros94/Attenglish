@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attenglish (Development)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=ANTHROPIC_API_KEY=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"
+      ]
+    }
+  ]
+}
