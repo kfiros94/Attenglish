@@ -1,0 +1,18 @@
+# Compiled JavaScript files
+lib/**/*.js
+lib/**/*.js.map
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Node.js dependency directories
+node_modules/
+
+# Firebase cache
+.firebase/
+
+# Firebase config
+.runtimeconfig.json
+
+# Uncomment this if you'd like to specify which Firebase products to import
+# .firebaserc

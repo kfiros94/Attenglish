@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
@@ -17,10 +19,17 @@ import 'features/auth/services/auth_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+
+  // Initialize Firebase (skip on Linux desktop only, not web)
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
+    print('⚠️  Skipping Firebase initialization on Linux desktop (for AI testing)');
+  } else {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
   // Initialize LocalizationService
   await LocalizationService.instance.initialize();
