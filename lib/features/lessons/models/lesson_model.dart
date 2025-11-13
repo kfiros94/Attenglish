@@ -19,6 +19,13 @@ class LessonModel {
   final List<String> imageUrls; // List of image URLs from Firebase Storage
   final List<ActivityModel> activities; // List of activities/exercises
 
+  // Document source fields (for AI-generated lessons)
+  final String? sourceDocumentUrl; // Firebase Storage URL
+  final String? sourceDocumentName; // Original filename
+  final String? sourceDocumentType; // "PDF", "DOCX", "TXT"
+  final String? sourceText; // Extracted text content
+  final bool isAiGenerated; // true if used AI
+
   const LessonModel({
     required this.id,
     required this.title,
@@ -35,6 +42,11 @@ class LessonModel {
     this.audioUrl,
     this.imageUrls = const [],
     this.activities = const [],
+    this.sourceDocumentUrl,
+    this.sourceDocumentName,
+    this.sourceDocumentType,
+    this.sourceText,
+    this.isAiGenerated = false,
   });
 
   /// Create LessonModel from Firestore JSON
@@ -63,6 +75,11 @@ class LessonModel {
               ?.map((a) => ActivityModel.fromJson(a as Map<String, dynamic>))
               .toList() ??
           [],
+      sourceDocumentUrl: json['sourceDocumentUrl'] as String?,
+      sourceDocumentName: json['sourceDocumentName'] as String?,
+      sourceDocumentType: json['sourceDocumentType'] as String?,
+      sourceText: json['sourceText'] as String?,
+      isAiGenerated: json['isAiGenerated'] as bool? ?? false,
     );
   }
 
@@ -84,6 +101,11 @@ class LessonModel {
       'audioUrl': audioUrl,
       'imageUrls': imageUrls,
       'activities': activities.map((a) => a.toJson()).toList(),
+      'sourceDocumentUrl': sourceDocumentUrl,
+      'sourceDocumentName': sourceDocumentName,
+      'sourceDocumentType': sourceDocumentType,
+      'sourceText': sourceText,
+      'isAiGenerated': isAiGenerated,
     };
   }
 
@@ -104,6 +126,11 @@ class LessonModel {
     String? audioUrl,
     List<String>? imageUrls,
     List<ActivityModel>? activities,
+    String? sourceDocumentUrl,
+    String? sourceDocumentName,
+    String? sourceDocumentType,
+    String? sourceText,
+    bool? isAiGenerated,
   }) {
     return LessonModel(
       id: id ?? this.id,
@@ -121,6 +148,11 @@ class LessonModel {
       audioUrl: audioUrl ?? this.audioUrl,
       imageUrls: imageUrls ?? this.imageUrls,
       activities: activities ?? this.activities,
+      sourceDocumentUrl: sourceDocumentUrl ?? this.sourceDocumentUrl,
+      sourceDocumentName: sourceDocumentName ?? this.sourceDocumentName,
+      sourceDocumentType: sourceDocumentType ?? this.sourceDocumentType,
+      sourceText: sourceText ?? this.sourceText,
+      isAiGenerated: isAiGenerated ?? this.isAiGenerated,
     );
   }
 

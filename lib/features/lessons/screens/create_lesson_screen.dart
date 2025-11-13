@@ -9,6 +9,8 @@ import '../services/lesson_service.dart';
 import '../widgets/audio_upload_widget.dart';
 import '../widgets/image_upload_widget.dart';
 import 'select_activity_type_screen.dart';
+import '../../ai_generation/models/activity_result_model.dart';
+import '../../ai_generation/services/document_storage_service.dart';
 
 /// Screen for creating and editing lessons
 /// Professional web form with validation
@@ -42,6 +44,13 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
 
   // Activities state
   List<ActivityModel> _activities = [];
+
+  // Document source metadata (for AI-generated lessons)
+  String? _sourceDocumentUrl;
+  String? _sourceDocumentName;
+  String? _sourceDocumentType;
+  String? _sourceText;
+  bool _isAiGenerated = false;
 
   bool _isLoading = false;
   bool _isLoadingData = true;
@@ -187,6 +196,11 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
         audioUrl: _audioUrl,
         imageUrls: _imageUrls,
         activities: _activities,
+        sourceDocumentUrl: _sourceDocumentUrl,
+        sourceDocumentName: _sourceDocumentName,
+        sourceDocumentType: _sourceDocumentType,
+        sourceText: _sourceText,
+        isAiGenerated: _isAiGenerated,
       );
 
       if (widget.lessonId != null) {
@@ -234,6 +248,96 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Handles different types of activity results (single, list, or document-based)
+  Future<void> _handleActivityResult(dynamic result) async {
+    if (result is ActivityModel) {
+      // Single activity from manual creation screens
+      setState(() {
+        _activities.add(result);
+      });
+    } else if (result is List<ActivityModel>) {
+      // Multiple activities from AI generation (text-based)
+      setState(() {
+        _activities.addAll(result);
+        _isAiGenerated = true;
+      });
+    } else if (result is ActivityResult) {
+      // Activities from document-based AI generation
+      print('DEBUG: Received ActivityResult');
+      print('DEBUG: Has document: ${result.hasDocument}');
+      print('DEBUG: Document name: ${result.documentName}');
+      print('DEBUG: Document type: ${result.documentType}');
+      print('DEBUG: Has file: ${result.documentFile != null}');
+      print('DEBUG: Has bytes: ${result.documentBytes != null}');
+
+      try {
+        // Show uploading message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Uploading document to Firebase Storage...'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+
+        // Upload the document to Firebase Storage
+        final storageService = DocumentStorageService();
+
+        // Use temp lesson ID for organizing files
+        final lessonId = _tempLessonId ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
+
+        print('DEBUG: Uploading to lessonId: $lessonId');
+
+        // Upload document
+        final documentUrl = await storageService.uploadDocument(
+          file: result.documentFile,
+          bytes: result.documentBytes,
+          fileName: result.documentName!,
+          lessonId: lessonId,
+        );
+
+        print('DEBUG: Upload successful! URL: $documentUrl');
+
+        // Update state with activities and document metadata
+        setState(() {
+          _activities.addAll(result.activities);
+          _sourceDocumentUrl = documentUrl;
+          _sourceDocumentName = result.documentName;
+          _sourceDocumentType = result.documentType;
+          _sourceText = result.sourceText;
+          _isAiGenerated = true;
+        });
+
+        print('DEBUG: State updated with document metadata');
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✓ Added ${result.activities.length} activities from ${result.documentName}\n✓ Document uploaded to Firebase'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        print('DEBUG: Upload failed with error: $e');
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to upload document: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
     }
   }
@@ -561,10 +665,8 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
                                 ),
                               );
 
-                              if (result != null && result is ActivityModel) {
-                                setState(() {
-                                  _activities.add(result);
-                                });
+                              if (result != null) {
+                                await _handleActivityResult(result);
                               }
                             },
                             icon: const Icon(Icons.add),

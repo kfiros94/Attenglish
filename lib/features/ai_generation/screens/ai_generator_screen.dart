@@ -1,7 +1,13 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:file_picker/file_picker.dart';
 import '../models/generation_config_model.dart';
 import '../models/ai_response_model.dart';
+import '../models/activity_result_model.dart';
 import '../services/claude_ai_service.dart';
+import '../services/document_processor_service.dart';
 import 'review_activities_screen.dart';
 import '../../lessons/models/activity_model.dart';
 
@@ -44,6 +50,12 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   bool _isGenerating = false;
   int _wordCount = 0;
 
+  // Document upload variables
+  File? _selectedFile;
+  Uint8List? _selectedFileBytes; // For web platform
+  DocumentExtractionResult? _extractedDocument;
+  bool _isExtracting = false;
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +71,8 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   void dispose() {
     _tabController?.dispose();
     _textController.dispose();
+    _selectedFile = null;
+    _extractedDocument = null;
     super.dispose();
   }
 
@@ -138,17 +152,42 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
         Navigator.pop(context);
 
         // Navigate to review screen
-        final result = await Navigator.push<List<ActivityModel>>(
+        final selectedActivities = await Navigator.push<List<ActivityModel>>(
           context,
           MaterialPageRoute(
             builder: (context) => ReviewActivitiesScreen(response: response),
           ),
         );
 
-        // If activities were selected, return them
-        if (result != null && result.isNotEmpty) {
-          // Return the selected activities to the previous screen (lesson creator)
-          Navigator.pop(context, result);
+        // If activities were selected, wrap with document info and return
+        if (selectedActivities != null && selectedActivities.isNotEmpty) {
+          // If this was from a document upload, wrap the result with document metadata
+          if (_extractedDocument != null) {
+            print('DEBUG AI Generator: Wrapping activities with document info');
+            print('DEBUG: Document name: ${_extractedDocument!.fileName}');
+            print('DEBUG: Document type: ${_extractedDocument!.fileType}');
+            print('DEBUG: Has file: ${_selectedFile != null}');
+            print('DEBUG: Has bytes: ${_selectedFileBytes != null}');
+            print('DEBUG: Text length: ${_extractedDocument!.text.length}');
+
+            final result = ActivityResult(
+              activities: selectedActivities,
+              documentFile: _selectedFile,
+              documentBytes: _selectedFileBytes,
+              documentName: _extractedDocument!.fileName,
+              documentType: _extractedDocument!.fileType,
+              sourceText: _extractedDocument!.text,
+            );
+
+            print('DEBUG: ActivityResult created, has document: ${result.hasDocument}');
+
+            // Return the wrapped result
+            Navigator.pop(context, result);
+          } else {
+            print('DEBUG AI Generator: No document, returning activities only');
+            // Regular text-based generation - return just the activities
+            Navigator.pop(context, selectedActivities);
+          }
         }
       }
     } on AiGenerationException catch (e) {
@@ -335,6 +374,130 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
         duration: const Duration(seconds: 4),
       ),
     );
+  }
+
+  /// Picks and extracts text from a document
+  Future<void> _pickAndExtractDocument() async {
+    setState(() => _isExtracting = true);
+
+    try {
+      final service = DocumentProcessorService();
+
+      // For mobile/desktop
+      if (!kIsWeb) {
+        final file = await service.pickDocument();
+
+        if (file == null) {
+          setState(() => _isExtracting = false);
+          return;
+        }
+
+        final result = await service.extractTextFromFile(file);
+
+        setState(() {
+          _selectedFile = file;
+          _extractedDocument = result;
+          _isExtracting = false;
+        });
+      } else {
+        // For web - handle bytes
+        final pickerResult = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf', 'docx', 'txt'],
+          withData: true,
+        );
+
+        if (pickerResult == null || pickerResult.files.isEmpty) {
+          setState(() => _isExtracting = false);
+          return;
+        }
+
+        final fileBytes = pickerResult.files.first.bytes;
+        final fileName = pickerResult.files.first.name;
+
+        if (fileBytes == null) {
+          throw DocumentProcessingException('Failed to read file data');
+        }
+
+        final result = await service.extractTextFromBytes(fileBytes, fileName);
+
+        setState(() {
+          _selectedFileBytes = fileBytes; // Store bytes for later upload
+          _extractedDocument = result;
+          _isExtracting = false;
+        });
+      }
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Text extracted successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } on DocumentProcessingException catch (e) {
+      setState(() => _isExtracting = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isExtracting = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Removes the currently selected document
+  void _removeDocument() {
+    setState(() {
+      _selectedFile = null;
+      _selectedFileBytes = null;
+      _extractedDocument = null;
+    });
+  }
+
+  /// Generates activities from the extracted document text
+  Future<void> _generateFromDocument() async {
+    if (_extractedDocument == null) return;
+
+    // Validate document
+    if (!_extractedDocument!.isValidLength) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_extractedDocument!.validationMessage),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Build config from form
+    final config = GenerationConfig(
+      gradeLevel: _selectedGrade,
+      difficulty: _selectedDifficulty,
+      multipleChoiceCount: _mcCount,
+      fillBlankCount: _fbCount,
+      trueFalseCount: _tfCount,
+      dragDropCount: _ddCount,
+      includeVocabulary: _includeVocabulary,
+    );
+
+    // Use existing _generate method with extracted text
+    await _generate(_extractedDocument!.text, config);
   }
 
   /// Shows enhanced help dialog with detailed instructions
@@ -571,37 +734,308 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
     );
   }
 
-  /// Builds the "Upload File" tab (Coming Soon)
+  /// Builds the "Upload File" tab
   Widget _buildUploadFileTab() {
-    return Center(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.upload_file,
-            size: 80,
-            color: Colors.grey.shade400,
+          // Info card
+          Card(
+            color: Colors.blue.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Upload a PDF, DOCX, or TXT file. AI will extract the text and generate activities!',
+                      style: TextStyle(color: Colors.blue.shade900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Upload Document',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Supported: PDF, DOCX, TXT',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade500,
-                ),
-          ),
+
           const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: null, // Disabled for now
-            child: const Text('Coming in Next Update!'),
-          ),
+
+          // Upload button OR file info
+          if (_extractedDocument == null)
+            _buildUploadButton()
+          else
+            _buildFileInfo(),
+
+          // Show rest only if document is uploaded
+          if (_extractedDocument != null) ...[
+            const SizedBox(height: 24),
+            _buildTextPreview(),
+
+            const SizedBox(height: 24),
+            _buildConfigurationSection(),
+
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton.icon(
+                onPressed: _isGenerating ? null : _generateFromDocument,
+                icon: const Icon(Icons.auto_awesome),
+                label: Text(
+                  _isGenerating ? 'Generating...' : 'Generate Activities',
+                ),
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  /// Builds the upload button for document selection
+  Widget _buildUploadButton() {
+    return GestureDetector(
+      onTap: _isExtracting ? null : _pickAndExtractDocument,
+      child: Container(
+        height: 200,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _isExtracting ? Colors.blue : Colors.grey.shade300,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: _isExtracting ? Colors.blue.shade50 : Colors.grey.shade50,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_isExtracting)
+              Column(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Extracting text from document...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.blue.shade900,
+                    ),
+                  ),
+                ],
+              )
+            else
+              Column(
+                children: [
+                  Icon(
+                    Icons.upload_file,
+                    size: 64,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Upload Document',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'PDF, DOCX, or TXT',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _pickAndExtractDocument,
+                    icon: const Icon(Icons.folder_open),
+                    label: const Text('Choose File'),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds the file info card showing document details
+  Widget _buildFileInfo() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // File header
+            Row(
+              children: [
+                const Icon(Icons.description, color: Colors.blue, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _extractedDocument!.fileName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_extractedDocument!.fileType} • ${_extractedDocument!.fileSizeKB} KB',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: _removeDocument,
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Remove file',
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+            const Divider(),
+            const SizedBox(height: 12),
+
+            // File stats
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStat('Words', _extractedDocument!.wordCount.toString()),
+                if (_extractedDocument!.pageCount != null)
+                  _buildStat('Pages', _extractedDocument!.pageCount.toString()),
+                _buildStat('Size', '${_extractedDocument!.fileSizeMB} MB'),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Validation status
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _extractedDocument!.isValidLength
+                    ? Colors.green.shade50
+                    : Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _extractedDocument!.isValidLength
+                        ? Icons.check_circle
+                        : Icons.warning,
+                    color: _extractedDocument!.isValidLength
+                        ? Colors.green
+                        : Colors.red,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _extractedDocument!.validationMessage,
+                      style: TextStyle(
+                        color: _extractedDocument!.isValidLength
+                            ? Colors.green.shade900
+                            : Colors.red.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds a stat display (helper for file info)
+  Widget _buildStat(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the text preview widget showing extracted text
+  Widget _buildTextPreview() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.preview, size: 20, color: Colors.grey.shade700),
+                const SizedBox(width: 8),
+                const Text(
+                  'Extracted Text Preview',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 150,
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: SingleChildScrollView(
+                child: Text(
+                  _extractedDocument!.text.length > 500
+                      ? '${_extractedDocument!.text.substring(0, 500)}...\n\n(Preview truncated. Full text will be used for generation.)'
+                      : _extractedDocument!.text,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
