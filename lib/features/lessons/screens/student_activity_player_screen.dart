@@ -112,18 +112,21 @@ class _StudentActivityPlayerScreenState
     switch (activity.type) {
       case 'multiple_choice':
         return MultipleChoiceWidget(
+          key: ValueKey('mc_$_currentActivityIndex'),
           activity: activity,
           onAnswered: _onActivityAnswered,
         );
 
       case 'fill_blank':
         return FillBlankWidget(
+          key: ValueKey('fb_$_currentActivityIndex'),
           activity: activity,
           onAnswered: _onActivityAnswered,
         );
 
       case 'true_false':
         return TrueFalseWidget(
+          key: ValueKey('tf_$_currentActivityIndex'),
           activity: activity,
           onAnswered: _onActivityAnswered,
         );

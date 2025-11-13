@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/adhd_theme.dart';
 import '../../../shared/widgets/atti_mascot.dart';
 import '../../../shared/widgets/simple_audio_player.dart';
@@ -440,28 +441,195 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
           // Main lesson content
           _buildSectionHeader('📖 Lesson'),
           const SizedBox(height: ADHDTheme.spacingMedium),
-          Container(
-            padding: const EdgeInsets.all(ADHDTheme.spacingLarge),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Text(
-              _lesson!.textContent,
-              style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
-                height: 1.8,
-                fontSize: 18,
+
+          // Check if this is an AI-generated lesson with document
+          if (_lesson!.sourceDocumentUrl != null && _lesson!.sourceDocumentUrl!.isNotEmpty) ...[
+            // AI Generated Badge
+            Container(
+              padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
+              decoration: BoxDecoration(
+                color: Colors.purple.shade50,
+                borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+                border: Border.all(color: Colors.purple.shade200, width: 2),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, color: Colors.purple, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'AI Generated Lesson',
+                        style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'This lesson was created from a document uploaded by your teacher.',
+                    style: ADHDTheme.studentTextTheme.bodyMedium?.copyWith(
+                      color: Colors.purple.shade700,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: ADHDTheme.spacingXLarge),
+            const SizedBox(height: ADHDTheme.spacingMedium),
+
+            // Document Download Card
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+              ),
+              child: InkWell(
+                onTap: () => _downloadDocument(
+                  _lesson!.sourceDocumentUrl!,
+                  _lesson!.sourceDocumentName ?? 'lesson_document',
+                ),
+                borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+                child: Padding(
+                  padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
+                  child: Row(
+                    children: [
+                      // Document icon
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _getDocumentIcon(_lesson!.sourceDocumentType),
+                          size: 32,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: ADHDTheme.spacingMedium),
+
+                      // Document info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _lesson!.sourceDocumentName ?? 'Lesson Document',
+                              style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tap to open ${_lesson!.sourceDocumentType ?? 'document'}',
+                              style: ADHDTheme.studentTextTheme.bodySmall?.copyWith(
+                                color: ADHDTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Download icon
+                      const Icon(
+                        Icons.open_in_new,
+                        color: Colors.blue,
+                        size: 28,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: ADHDTheme.spacingMedium),
+
+            // Text preview (if available)
+            if (_lesson!.sourceText != null && _lesson!.sourceText!.isNotEmpty)
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.preview, size: 18, color: ADHDTheme.textSecondary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Preview',
+                            style: ADHDTheme.studentTextTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _lesson!.sourceText!.length > 300
+                            ? '${_lesson!.sourceText!.substring(0, 300)}...'
+                            : _lesson!.sourceText!,
+                        style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
+                          height: 1.5,
+                          color: ADHDTheme.textPrimary,
+                        ),
+                      ),
+                      if (_lesson!.sourceText!.length > 300) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Open the document above to read the full text.',
+                                style: ADHDTheme.studentTextTheme.bodySmall?.copyWith(
+                                  color: Colors.blue.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: ADHDTheme.spacingXLarge),
+          ] else ...[
+            // Regular lesson - show text content as normal
+            if (_lesson!.textContent.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(ADHDTheme.spacingLarge),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  _lesson!.textContent,
+                  style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
+                    height: 1.8,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            const SizedBox(height: ADHDTheme.spacingXLarge),
+          ],
 
           // Images gallery (if available)
           if (_lesson!.imageUrls.isNotEmpty) ...[
@@ -949,5 +1117,73 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
         ),
       ),
     );
+  }
+
+  /// Get document icon based on file type
+  IconData _getDocumentIcon(String? type) {
+    if (type == null) return Icons.insert_drive_file;
+
+    switch (type.toUpperCase()) {
+      case 'PDF':
+        return Icons.picture_as_pdf;
+      case 'DOCX':
+        return Icons.description;
+      case 'TXT':
+        return Icons.text_snippet;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  /// Download/open document
+  Future<void> _downloadDocument(String url, String fileName) async {
+    try {
+      final uri = Uri.parse(url);
+
+      // Check if can launch
+      if (await canLaunchUrl(uri)) {
+        // Launch URL (opens in browser/default app)
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication, // Opens outside the app
+        );
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Opening $fileName...')),
+                ],
+              ),
+              backgroundColor: ADHDTheme.successGreen,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Could not open document');
+      }
+    } catch (e) {
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Failed to open document: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 }

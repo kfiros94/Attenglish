@@ -4,6 +4,7 @@ import 'add_multiple_choice_screen.dart';
 import 'add_fill_blank_screen.dart';
 import 'add_true_false_screen.dart';
 import '../../ai_generation/screens/ai_generator_screen.dart';
+import '../../ai_generation/models/activity_result_model.dart';
 
 /// Screen where teacher chooses which type of activity to create
 class SelectActivityTypeScreen extends StatelessWidget {
@@ -118,8 +119,9 @@ class SelectActivityTypeScreen extends StatelessWidget {
                     builder: (context) => const AiGeneratorScreen(),
                   ),
                 );
-                // If activities were generated, pass them back
-                if (result != null && result is List<ActivityModel>) {
+                // Handle result - could be List<ActivityModel> or ActivityResult
+                if (result != null) {
+                  // Pass the result back as-is (whether it's activities or ActivityResult)
                   Navigator.pop(context, result);
                 }
               },
