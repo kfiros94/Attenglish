@@ -1140,47 +1140,85 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
     try {
       final uri = Uri.parse(url);
 
-      // Check if can launch
-      if (await canLaunchUrl(uri)) {
-        // Launch URL (opens in browser/default app)
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication, // Opens outside the app
-        );
+      // Try to launch the URL
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication, // Opens outside the app
+      );
 
-        // Show success message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text('Opening $fileName...')),
-                ],
-              ),
-              backgroundColor: ADHDTheme.successGreen,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        throw Exception('Could not open document');
+      if (!launched) {
+        // Failed to launch - show helpful error
+        throw Exception('No app available to open this file');
       }
-    } catch (e) {
-      // Show error message
+
+      // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.white),
+                const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Failed to open document: $e')),
+                Expanded(child: Text('Opening $fileName...')),
               ],
             ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            backgroundColor: ADHDTheme.successGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Show error dialog with helpful instructions
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                SizedBox(width: 8),
+                Text('Cannot Open Document'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Unable to open the PDF file. This usually happens when:',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('• No PDF viewer app is installed'),
+                  const Text('• No browser app is available'),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'To fix this:',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('1. Install Chrome or any browser from Play Store'),
+                  const Text('2. Install Adobe Acrobat Reader'),
+                  const Text('3. Or try opening on a different device'),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Technical error: $e',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
         );
       }
