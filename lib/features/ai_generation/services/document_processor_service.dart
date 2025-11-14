@@ -189,26 +189,57 @@ class DocumentProcessorService {
     String fileName,
   ) async {
     try {
-      // DOCX is a ZIP archive
-      final archive = ZipDecoder().decodeBytes(bytes);
+      Archive archive;
+
+      // Try to decode the ZIP archive
+      try {
+        archive = ZipDecoder().decodeBytes(bytes);
+      } catch (zipError) {
+        throw DocumentProcessingException(
+          'Invalid DOCX file: Unable to read file structure. '
+          'The file may be corrupted or not a valid DOCX document. '
+          'Please try:\n'
+          '1. Opening the file in Microsoft Word/Google Docs\n'
+          '2. Saving it again as DOCX\n'
+          '3. Or converting it to PDF format\n'
+          'Technical error: $zipError'
+        );
+      }
 
       // Find document.xml which contains the text
       final documentXml = archive.findFile('word/document.xml');
 
       if (documentXml == null) {
+        // List available files for debugging
+        final availableFiles = archive.files.map((f) => f.name).join(', ');
         throw DocumentProcessingException(
-            'Invalid DOCX file: document.xml not found');
+          'Invalid DOCX file: Required content not found. '
+          'This file may not be a valid Word document. '
+          'Available files in archive: $availableFiles'
+        );
       }
 
       // Extract the XML content
-      final xmlContent = String.fromCharCodes(documentXml.content as List<int>);
+      String xmlContent;
+      try {
+        xmlContent = String.fromCharCodes(documentXml.content as List<int>);
+      } catch (e) {
+        throw DocumentProcessingException(
+          'Failed to read document content. The file may be corrupted.'
+        );
+      }
 
       // Extract text from XML
       final text = _extractTextFromXml(xmlContent);
 
+      if (text.isEmpty) {
+        throw DocumentProcessingException(
+          'No text found in document. The document may be empty or contain only images.'
+        );
+      }
+
       // Count words
-      final wordCount =
-          text.isEmpty ? 0 : text.trim().split(RegExp(r'\s+')).length;
+      final wordCount = text.trim().split(RegExp(r'\s+')).length;
 
       return DocumentExtractionResult(
         text: text,
@@ -218,8 +249,18 @@ class DocumentProcessorService {
         fileName: fileName,
         fileType: 'DOCX',
       );
+    } on DocumentProcessingException {
+      // Re-throw our custom exceptions
+      rethrow;
     } catch (e) {
-      throw DocumentProcessingException('Failed to extract text from DOCX: $e');
+      // Catch any other unexpected errors
+      throw DocumentProcessingException(
+        'Unexpected error while processing DOCX file: $e\n\n'
+        'Please try:\n'
+        '1. Re-saving the document in Word/Google Docs\n'
+        '2. Converting to PDF format instead\n'
+        '3. Using a different document'
+      );
     }
   }
 

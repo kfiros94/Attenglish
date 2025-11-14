@@ -441,10 +441,29 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
     } on DocumentProcessingException catch (e) {
       setState(() => _isExtracting = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: Colors.red,
+        // Show error dialog for better readability of multi-line errors
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red, size: 28),
+                SizedBox(width: 8),
+                Text('Document Processing Error'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Text(
+                e.message,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
         );
       }
@@ -453,8 +472,9 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('Unexpected error: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
