@@ -238,14 +238,134 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 )
-              : SafeArea(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppTheme.spacingLarge),
-                    child: _userData!.role == 'teacher'
-                        ? _buildTeacherDashboard()
-                        : _buildStudentView(),
-                  ),
+              : _buildBody(),
+    );
+  }
+
+  /// Build body with platform check for teachers
+  Widget _buildBody() {
+    // Check if teacher is accessing from mobile/iOS
+    if (_userData!.role == 'teacher' && !kIsWeb) {
+      return _buildWebOnlyMessage();
+    }
+
+    // Normal view
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppTheme.spacingLarge),
+        child: _userData!.role == 'teacher'
+            ? _buildTeacherDashboard()
+            : _buildStudentView(),
+      ),
+    );
+  }
+
+  /// Build "Web Only" message for teachers on mobile
+  Widget _buildWebOnlyMessage() {
+    final isRTL = LocalizationService.instance.isRTL;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingLarge),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Computer icon
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.computer,
+                size: 80,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingLarge),
+
+            // Title
+            Text(
+              isRTL ? 'פורטל המורים זמין רק בדפדפן' : 'Teacher Portal',
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppTheme.spacingMedium),
+
+            // Message
+            Text(
+              isRTL
+                  ? 'פורטל המורים זמין רק דרך דפדפן אינטרנט.\nאנא גש למערכת דרך מחשב או טאבלט עם דפדפן.'
+                  : 'Accessing the teacher portal is only available through a web browser.\nPlease access the system through a computer or tablet with a browser.',
+              style: const TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppTheme.spacingLarge),
+
+            // Platform icons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildPlatformIcon(Icons.laptop_chromebook, 'Chrome'),
+                const SizedBox(width: AppTheme.spacingMedium),
+                _buildPlatformIcon(Icons.web, 'Safari'),
+                const SizedBox(width: AppTheme.spacingMedium),
+                _buildPlatformIcon(Icons.web_asset, 'Firefox'),
+              ],
+            ),
+            const SizedBox(height: AppTheme.spacingXLarge),
+
+            // Logout button
+            ElevatedButton.icon(
+              onPressed: _handleLogout,
+              icon: const Icon(Icons.logout),
+              label: Text(isRTL ? 'התנתק' : 'Logout'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacingLarge,
+                  vertical: AppTheme.spacingMedium,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build platform icon with label
+  Widget _buildPlatformIcon(IconData icon, String label) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Icon(icon, size: 32, color: AppColors.primary),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 

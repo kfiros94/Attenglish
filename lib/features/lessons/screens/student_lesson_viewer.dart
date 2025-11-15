@@ -1140,6 +1140,9 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
     try {
       final uri = Uri.parse(url);
 
+      // Determine file type from filename
+      final fileType = fileName.split('.').last.toUpperCase();
+
       // Try to launch the URL
       final launched = await launchUrl(
         uri,
@@ -1148,7 +1151,7 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
 
       if (!launched) {
         // Failed to launch - show helpful error
-        throw Exception('No app available to open this file');
+        throw Exception('No app available to open this file type');
       }
 
       // Show success message
@@ -1168,6 +1171,9 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
         );
       }
     } catch (e) {
+      // Determine file type for better error message
+      final fileType = fileName.split('.').last.toUpperCase();
+
       // Show error dialog with helpful instructions
       if (mounted) {
         showDialog(
@@ -1185,12 +1191,12 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Unable to open the PDF file. This usually happens when:',
-                    style: TextStyle(fontWeight: FontWeight.w500),
+                  Text(
+                    'Unable to open the $fileType file. This usually happens when:',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 12),
-                  const Text('• No PDF viewer app is installed'),
+                  const Text('• No compatible app is installed'),
                   const Text('• No browser app is available'),
                   const SizedBox(height: 16),
                   const Text(
@@ -1199,7 +1205,12 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
                   ),
                   const SizedBox(height: 8),
                   const Text('1. Install Chrome or any browser from Play Store'),
-                  const Text('2. Install Adobe Acrobat Reader'),
+                  if (fileType == 'PDF')
+                    const Text('2. Install Adobe Acrobat Reader for PDF files'),
+                  if (fileType == 'DOCX')
+                    const Text('2. Install Microsoft Word or Google Docs for DOCX files'),
+                  if (fileType == 'TXT')
+                    const Text('2. Install any text editor app for TXT files'),
                   const Text('3. Or try opening on a different device'),
                   const SizedBox(height: 16),
                   Text(
