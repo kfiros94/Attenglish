@@ -105,6 +105,7 @@ class DocumentProcessorService {
             fileSize: bytes.length,
             fileName: fileName,
             fileType: 'TXT',
+            originalBytes: bytes,
           );
         } catch (e) {
           throw DocumentProcessingException('Failed to read text file: $e');
@@ -167,6 +168,7 @@ class DocumentProcessorService {
         fileSize: bytes.length,
         fileName: fileName,
         fileType: 'PDF',
+        originalBytes: bytes,
       );
     } catch (e) {
       throw DocumentProcessingException('Failed to extract text from PDF: $e');
@@ -248,6 +250,7 @@ class DocumentProcessorService {
         fileSize: bytes.length,
         fileName: fileName,
         fileType: 'DOCX',
+        originalBytes: bytes,
       );
     } on DocumentProcessingException {
       // Re-throw our custom exceptions
@@ -304,6 +307,9 @@ class DocumentExtractionResult {
   /// File type (extension)
   final String fileType;
 
+  /// Original file bytes for upload to Firebase Storage
+  final Uint8List? originalBytes;
+
   const DocumentExtractionResult({
     required this.text,
     this.pageCount,
@@ -311,6 +317,7 @@ class DocumentExtractionResult {
     required this.fileSize,
     required this.fileName,
     required this.fileType,
+    this.originalBytes,
   });
 
   /// Get file size in MB with 2 decimal places

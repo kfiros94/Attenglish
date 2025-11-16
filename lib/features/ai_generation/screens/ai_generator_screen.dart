@@ -8,6 +8,7 @@ import '../models/ai_response_model.dart';
 import '../models/activity_result_model.dart';
 import '../services/claude_ai_service.dart';
 import '../services/document_processor_service.dart';
+import '../services/document_storage_service.dart';
 import 'review_activities_screen.dart';
 import '../../lessons/models/activity_model.dart';
 
@@ -152,41 +153,115 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
         Navigator.pop(context);
 
         // Navigate to review screen
-        final selectedActivities = await Navigator.push<List<ActivityModel>>(
+        print('=== NAVIGATING TO REVIEW SCREEN ===');
+        print('=== extractedDocument: ${_extractedDocument != null}');
+        print('=== extractedDocument.originalBytes: ${_extractedDocument?.originalBytes != null}');
+
+        final result = await Navigator.push<Map<String, dynamic>>(
           context,
           MaterialPageRoute(
-            builder: (context) => ReviewActivitiesScreen(response: response),
+            builder: (context) => ReviewActivitiesScreen(
+              response: response,
+              extractedDocument: _extractedDocument,
+            ),
           ),
         );
 
-        // If activities were selected, wrap with document info and return
-        if (selectedActivities != null && selectedActivities.isNotEmpty) {
-          // If this was from a document upload, wrap the result with document metadata
-          if (_extractedDocument != null) {
-            print('DEBUG AI Generator: Wrapping activities with document info');
-            print('DEBUG: Document name: ${_extractedDocument!.fileName}');
-            print('DEBUG: Document type: ${_extractedDocument!.fileType}');
-            print('DEBUG: Has file: ${_selectedFile != null}');
-            print('DEBUG: Has bytes: ${_selectedFileBytes != null}');
-            print('DEBUG: Text length: ${_extractedDocument!.text.length}');
+        print('=== BACK FROM REVIEW SCREEN ===');
+        print('=== Result is null: ${result == null}');
 
-            final result = ActivityResult(
-              activities: selectedActivities,
-              documentFile: _selectedFile,
-              documentBytes: _selectedFileBytes,
-              documentName: _extractedDocument!.fileName,
-              documentType: _extractedDocument!.fileType,
-              sourceText: _extractedDocument!.text,
-            );
+        // If activities were selected, handle document upload and return
+        if (result != null) {
+          print('>>> RECEIVED RESULT FROM REVIEW SCREEN');
+          print('>>> Result type: ${result.runtimeType}');
+          print('>>> Result keys: ${result.keys}');
 
-            print('DEBUG: ActivityResult created, has document: ${result.hasDocument}');
+          final activities = result['activities'] as List<ActivityModel>?;
+          final vocabulary = result['vocabulary'] as List<VocabularyItem>?;
+          final extractedDoc = result['extractedDocument'] as DocumentExtractionResult?;
 
-            // Return the wrapped result
-            Navigator.pop(context, result);
-          } else {
-            print('DEBUG AI Generator: No document, returning activities only');
-            // Regular text-based generation - return just the activities
-            Navigator.pop(context, selectedActivities);
+          print('>>> Activities: ${activities?.length ?? 0}');
+          print('>>> Extracted doc: ${extractedDoc != null}');
+          print('>>> Has originalBytes: ${extractedDoc?.originalBytes != null}');
+
+          if (activities != null && activities.isNotEmpty) {
+            print('>>> ACTIVITIES NOT EMPTY, PROCEEDING...');
+
+            // Upload document to Firebase Storage if available
+            String? documentUrl;
+            String? documentName;
+            String? documentType;
+
+            if (extractedDoc != null && extractedDoc.originalBytes != null) {
+              print('>>> STARTING UPLOAD PROCESS');
+              try {
+                print('>>> Uploading document to Firebase Storage...');
+
+                // Show uploading message
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Uploading document...'),
+                      duration: Duration(seconds: 30),
+                      backgroundColor: Colors.blue,
+                    ),
+                  );
+                }
+
+                final storageService = DocumentStorageService();
+                final tempLessonId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+
+                print('>>> Temp lesson ID: $tempLessonId');
+                print('>>> Document name: ${extractedDoc.fileName}');
+                print('>>> Bytes length: ${extractedDoc.originalBytes!.length}');
+
+                documentUrl = await storageService.uploadDocument(
+                  bytes: extractedDoc.originalBytes,
+                  fileName: extractedDoc.fileName,
+                  lessonId: tempLessonId,
+                );
+
+                documentName = extractedDoc.fileName;
+                documentType = extractedDoc.fileType;
+
+                print('>>> Upload successful! URL: $documentUrl');
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ Document uploaded successfully!'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                print('ERROR: Could not upload document: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('⚠️ Document upload failed, but activities saved'),
+                      backgroundColor: Colors.orange,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              }
+            }
+
+            // Return to previous screen with all data
+            if (mounted) {
+              Navigator.pop(context, {
+                'activities': activities,
+                'vocabulary': vocabulary,
+                'sourceText': extractedDoc?.text,
+                'sourceDocumentUrl': documentUrl,
+                'sourceDocumentName': documentName,
+                'sourceDocumentType': documentType,
+              });
+            }
           }
         }
       }

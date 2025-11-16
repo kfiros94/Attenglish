@@ -6,6 +6,8 @@ import '../../lessons/models/lesson_model.dart';
 import '../../lessons/services/lesson_service.dart';
 import '../../classroom/services/class_service.dart';
 import '../../classroom/models/class_model.dart';
+import '../services/document_processor_service.dart';
+import '../services/document_storage_service.dart';
 
 /// Screen for reviewing AI-generated activities before adding to lesson
 ///
@@ -17,10 +19,12 @@ import '../../classroom/models/class_model.dart';
 /// - Add selected activities to lesson
 class ReviewActivitiesScreen extends StatefulWidget {
   final AiGenerationResponse response;
+  final DocumentExtractionResult? extractedDocument;
 
   const ReviewActivitiesScreen({
     super.key,
     required this.response,
+    this.extractedDocument,
   });
 
   @override
@@ -157,8 +161,12 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
       return;
     }
 
-    // Return selected activities to previous screen
-    Navigator.pop(context, selectedActivities);
+    // Return selected activities AND document info to previous screen
+    Navigator.pop(context, {
+      'activities': selectedActivities,
+      'vocabulary': widget.response.vocabulary,
+      'extractedDocument': widget.extractedDocument,
+    });
 
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
@@ -439,6 +447,35 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
                 );
 
                 try {
+                  // Upload document to Firebase Storage if available
+                  String? documentUrl;
+                  String? documentName;
+                  String? documentType;
+
+                  if (widget.extractedDocument != null &&
+                      widget.extractedDocument!.originalBytes != null) {
+                    print('>>> UPLOADING DOCUMENT FROM SAVE AS LESSON');
+
+                    try {
+                      final storageService = DocumentStorageService();
+                      final tempLessonId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+
+                      documentUrl = await storageService.uploadDocument(
+                        bytes: widget.extractedDocument!.originalBytes,
+                        fileName: widget.extractedDocument!.fileName,
+                        lessonId: tempLessonId,
+                      );
+
+                      documentName = widget.extractedDocument!.fileName;
+                      documentType = widget.extractedDocument!.fileType;
+
+                      print('>>> Document uploaded: $documentUrl');
+                    } catch (uploadError) {
+                      print('>>> Document upload failed: $uploadError');
+                      // Continue anyway - lesson can still be saved
+                    }
+                  }
+
                   // Create lesson model
                   final lesson = LessonModel(
                     id: '', // Will be set by Firebase
@@ -455,6 +492,11 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
                     createdAt: DateTime.now(),
                     status: selectedStatus,
                     activities: activities,
+                    sourceDocumentUrl: documentUrl,
+                    sourceDocumentName: documentName,
+                    sourceDocumentType: documentType,
+                    sourceText: widget.extractedDocument?.text,
+                    isAiGenerated: true,
                   );
 
                   // Save to Firebase
