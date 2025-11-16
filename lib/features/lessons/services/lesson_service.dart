@@ -54,9 +54,24 @@ class LessonService {
     }
   }
 
-  /// Delete a lesson
+  /// Delete a lesson and its associated document from Storage
   Future<void> deleteLesson(String lessonId) async {
     try {
+      // First, get the lesson to check if it has a document
+      final lesson = await getLesson(lessonId);
+
+      // Delete the source document from Firebase Storage if it exists
+      if (lesson?.sourceDocumentUrl != null) {
+        try {
+          await deleteFile(lesson!.sourceDocumentUrl!);
+          print('>>> Deleted document from Storage: ${lesson.sourceDocumentName}');
+        } catch (e) {
+          // Log but don't fail - document might already be deleted
+          print('Warning: Could not delete document from Storage: $e');
+        }
+      }
+
+      // Delete the lesson from Firestore
       await _firestore.collection(_lessonsCollection).doc(lessonId).delete();
     } catch (e) {
       throw Exception('Failed to delete lesson: $e');
