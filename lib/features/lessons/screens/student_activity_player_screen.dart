@@ -3,6 +3,7 @@ import '../models/activity_model.dart';
 import '../widgets/activities/multiple_choice_widget.dart';
 import '../widgets/activities/fill_blank_widget.dart';
 import '../widgets/activities/true_false_widget.dart';
+import '../widgets/activities/drag_drop_widget.dart';
 
 /// Activity Player Screen for Students
 ///
@@ -132,19 +133,10 @@ class _StudentActivityPlayerScreenState
         );
 
       case 'drag_drop':
-        // TODO: Implement drag drop widget
-        return const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.construction, size: 64, color: Colors.orange),
-              SizedBox(height: 16),
-              Text(
-                'Drag & Drop coming soon!',
-                style: TextStyle(fontSize: 18),
-              ),
-            ],
-          ),
+        return DragDropWidget(
+          key: ValueKey('dd_$_currentActivityIndex'),
+          activity: activity,
+          onAnswered: _onActivityAnswered,
         );
 
       default:

@@ -3,6 +3,7 @@ import '../models/activity_model.dart';
 import 'add_multiple_choice_screen.dart';
 import 'add_fill_blank_screen.dart';
 import 'add_true_false_screen.dart';
+import 'create_drag_drop_screen.dart';
 import '../../ai_generation/screens/ai_generator_screen.dart';
 import '../../ai_generation/models/activity_result_model.dart';
 
@@ -94,12 +95,16 @@ class SelectActivityTypeScreen extends StatelessWidget {
               iconColor: Colors.purple,
               title: 'Drag & Drop',
               subtitle: 'Match items together',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('This screen will be built in the next step!'),
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateDragDropScreen(),
                   ),
                 );
+                if (result != null && result is ActivityModel) {
+                  Navigator.pop(context, result);
+                }
               },
             ),
 
