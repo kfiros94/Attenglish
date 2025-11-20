@@ -36,38 +36,16 @@ class AttiMascot extends StatelessWidget {
   }
 
   /// Build Atti's avatar
-  /// TODO: Replace with animated Lottie file in future
+  /// Using custom mascot image with transparent background
   Widget _buildAttiAvatar() {
     final double avatarSize = size.dimension;
 
-    return Container(
+    return SizedBox(
       width: avatarSize,
       height: avatarSize,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            ADHDTheme.primaryBlue,
-            ADHDTheme.secondaryGreen,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: ADHDTheme.primaryBlue.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          '🧠', // Brain emoji represents Atti
-          style: TextStyle(
-            fontSize: avatarSize * 0.5,
-          ),
-        ),
+      child: Image.asset(
+        'assets/images/mascot/atti_homescreen_studnet.png',
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -127,9 +105,9 @@ class AttiMascot extends StatelessWidget {
 
 /// Atti size variants
 enum AttiSize {
-  large(150), // Main homepage hero
-  medium(100), // Section headers
-  small(60); // Inline encouragement
+  large(250), // Main homepage hero - increased for better visibility
+  medium(150), // Section headers
+  small(80); // Inline encouragement
 
   final double dimension;
   const AttiSize(this.dimension);

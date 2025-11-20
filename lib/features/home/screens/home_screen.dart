@@ -739,18 +739,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const SizedBox(height: ADHDTheme.spacingLarge),
 
-        // 6. Small Atti with encouragement
-        Center(
-          child: AttiMascot(
-            message: AttiMessages.getRandomEncouragement(),
-            size: AttiSize.small,
-            position: AttiPosition.left,
-            showSpeechBubble: true,
-          ),
-        ),
-        const SizedBox(height: ADHDTheme.spacingXLarge),
-
-        // 7. Achievements section
+        // 6. Achievements section
         AchievementSection(
           achievements: Achievement.getSampleAchievements(),
         ),

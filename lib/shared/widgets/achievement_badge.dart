@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/adhd_theme.dart';
+import 'atti_mascot.dart';
 
 /// Achievement badge widget for gamification
 /// Shows earned and locked badges
@@ -87,62 +88,80 @@ class AchievementSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return Column(
+      children: [
+        // Atti mascot for achievements
+        Center(
+          child: SizedBox(
+            width: 320,
+            height: 320,
+            child: Image.asset(
+              'assets/images/mascot/atti_achivements.png',
+              fit: BoxFit.contain,
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section header
-          Row(
-            children: [
-              const Text(
-                '🏆',
-                style: TextStyle(fontSize: 24),
+        ),
+        const SizedBox(height: ADHDTheme.spacingMedium),
+
+        // Achievements container
+        Container(
+          padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-              const SizedBox(width: ADHDTheme.spacingSmall),
-              const Text(
-                'Your Achievements',
-                style: TextStyle(
-                  fontSize: ADHDTheme.fontSizeMedium,
-                  fontWeight: FontWeight.bold,
-                  color: ADHDTheme.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              _buildEarnedCount(),
             ],
           ),
-          const SizedBox(height: ADHDTheme.spacingMedium),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section header
+              Row(
+                children: [
+                  const Text(
+                    '🏆',
+                    style: TextStyle(fontSize: 24),
+                  ),
+                  const SizedBox(width: ADHDTheme.spacingSmall),
+                  const Text(
+                    'Your Achievements',
+                    style: TextStyle(
+                      fontSize: ADHDTheme.fontSizeMedium,
+                      fontWeight: FontWeight.bold,
+                      color: ADHDTheme.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  _buildEarnedCount(),
+                ],
+              ),
+              const SizedBox(height: ADHDTheme.spacingMedium),
 
-          // Badges grid
-          Wrap(
-            spacing: ADHDTheme.spacingMedium,
-            runSpacing: ADHDTheme.spacingMedium,
-            children: achievements.map((achievement) {
-              return SizedBox(
-                width: 80,
-                child: AchievementBadge(
-                  emoji: achievement.emoji,
-                  title: achievement.title,
-                  isLocked: !achievement.isEarned,
-                  onTap: () => _showAchievementDetails(context, achievement),
-                ),
-              );
-            }).toList(),
+              // Badges grid
+              Wrap(
+                spacing: ADHDTheme.spacingMedium,
+                runSpacing: ADHDTheme.spacingMedium,
+                children: achievements.map((achievement) {
+                  return SizedBox(
+                    width: 80,
+                    child: AchievementBadge(
+                      emoji: achievement.emoji,
+                      title: achievement.title,
+                      isLocked: !achievement.isEarned,
+                      onTap: () => _showAchievementDetails(context, achievement),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
