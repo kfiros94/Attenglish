@@ -204,10 +204,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Mascot with welcome message
+                      // Logo with welcome message
                       MascotWidget(
                         message: AppStrings.letsGetStarted(_currentLocale),
-                        size: 140,
+                        size: 220,
+                        useLogo: true,
                       ),
                       const SizedBox(height: AppTheme.spacingXLarge),
 

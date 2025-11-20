@@ -376,13 +376,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Compact mascot with message
+        // Logo with message
         Center(
           child: MascotWidget(
             message: isRTL
                 ? 'מוכן ללמד היום?'
                 : 'Ready to teach today?',
-            size: 100,
+            size: 220,
+            useLogo: true,
           ),
         ),
         const SizedBox(height: AppTheme.spacingLarge),
