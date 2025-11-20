@@ -151,18 +151,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: SizedBox(
-          height: 40,
-          child: Image.asset(
-            'assets/images/logo/Attenglish_Logo.png',
-            fit: BoxFit.contain,
-          ),
-        ),
+        title: !_isLoading && _userData != null ? _buildGreeting() : null,
+        centerTitle: false,
         actions: [
-          // Greeting
-          if (!_isLoading && _userData != null) _buildGreeting(),
-          const SizedBox(width: AppTheme.spacingSmall),
-
           // Language toggle
           const LanguageToggle(size: 36),
           const SizedBox(width: AppTheme.spacingSmall),
