@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/adhd_theme.dart';
 import '../../features/auth/services/auth_service.dart';
 import '../../features/gamification/services/gamification_service.dart';
+import '../../core/services/localization_service.dart';
+import '../../core/constants/app_strings.dart';
 
 /// ADHD-friendly progress bar showing level, XP, and streak
 /// Visually engaging with colors and animations
@@ -18,33 +20,44 @@ class StudentProgressBar extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    // Listen to locale changes to rebuild when language changes
+    return StreamBuilder<Locale>(
+      stream: LocalizationService.instance.localeStream,
+      initialData: LocalizationService.instance.currentLocale,
+      builder: (context, localeSnapshot) {
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        final userData = snapshot.data!.data() as Map<String, dynamic>;
-        final xp = userData['xpPoints'] as int? ?? 0;
-        final level = userData['currentLevel'] as int? ?? 1;
-        final streak = userData['currentStreak'] as int? ?? 0;
+            final userData = snapshot.data!.data() as Map<String, dynamic>;
+            final xp = userData['xpPoints'] as int? ?? 0;
+            final level = userData['currentLevel'] as int? ?? 1;
+            final streak = userData['currentStreak'] as int? ?? 0;
 
-        final gamificationService = GamificationService();
-        final progress = gamificationService.getProgressToNextLevel(xp);
-        final nextLevelXp = gamificationService.getXpForNextLevel(xp);
-        final levelName = gamificationService.getLevelName(level);
+            final gamificationService = GamificationService();
+            final progress = gamificationService.getProgressToNextLevel(xp);
+            final nextLevelXp = gamificationService.getXpForNextLevel(xp);
+            final currentLocale = localeSnapshot.data ?? LocalizationService.instance.currentLocale;
+            final levelName = gamificationService.getLevelName(
+              level,
+              useHebrew: currentLocale.languageCode == 'he',
+            );
 
-        return _ProgressBarContent(
-          level: level,
-          levelName: levelName,
-          currentXP: xp,
-          maxXP: nextLevelXp,
-          streakDays: streak,
-          progress: progress,
+            return _ProgressBarContent(
+              level: level,
+              levelName: levelName,
+              currentXP: xp,
+              maxXP: nextLevelXp,
+              streakDays: streak,
+              progress: progress,
+            );
+          },
         );
       },
     );
@@ -71,6 +84,7 @@ class _ProgressBarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = LocalizationService.instance.currentLocale;
 
     return Container(
       padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
@@ -89,9 +103,9 @@ class _ProgressBarContent extends StatelessWidget {
                     style: TextStyle(fontSize: 24),
                   ),
                   const SizedBox(width: ADHDTheme.spacingSmall),
-                  const Text(
-                    'Your Progress',
-                    style: TextStyle(
+                  Text(
+                    AppStrings.yourProgress(locale),
+                    style: const TextStyle(
                       fontSize: ADHDTheme.fontSizeMedium,
                       fontWeight: FontWeight.bold,
                       color: ADHDTheme.textPrimary,
@@ -99,45 +113,88 @@ class _ProgressBarContent extends StatelessWidget {
                   ),
                 ],
               ),
-              _buildStreakBadge(),
+              _buildStreakBadge(locale),
             ],
           ),
           const SizedBox(height: ADHDTheme.spacingMedium),
 
-          // Progress bar
-          _buildProgressBar(progress),
-          const SizedBox(height: ADHDTheme.spacingSmall),
-
-          // Level and XP info
+          // Owl icon + Progress bar section
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    levelName,
-                    style: const TextStyle(
-                      fontSize: ADHDTheme.fontSizeMedium,
-                      fontWeight: FontWeight.bold,
-                      color: ADHDTheme.primaryBlue,
-                    ),
-                  ),
-                  Text(
-                    'Level $level',
-                    style: const TextStyle(
-                      fontSize: ADHDTheme.fontSizeSmall,
-                      color: ADHDTheme.textSecondary,
-                    ),
-                  ),
-                ],
+              // Owl level icon
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: ADHDTheme.primaryBlue.withOpacity(0.1),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Image.asset(
+                  GamificationService.getOwlImageForLevel(level),
+                  width: 90,
+                  height: 90,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback to emoji if image not found
+                    return const Center(
+                      child: Text(
+                        '🦉',
+                        style: TextStyle(fontSize: 32),
+                      ),
+                    );
+                  },
+                ),
               ),
-              Text(
-                '$currentXP / $maxXP XP',
-                style: const TextStyle(
-                  fontSize: ADHDTheme.fontSizeSmall,
-                  color: ADHDTheme.textSecondary,
-                  fontWeight: FontWeight.w600,
+
+              const SizedBox(width: ADHDTheme.spacingMedium),
+
+              // Progress bar and XP info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Level name and number
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              levelName,
+                              style: const TextStyle(
+                                fontSize: ADHDTheme.fontSizeMedium,
+                                fontWeight: FontWeight.bold,
+                                color: ADHDTheme.primaryBlue,
+                              ),
+                            ),
+                            Text(
+                              '${AppStrings.level(locale)} $level',
+                              style: const TextStyle(
+                                fontSize: ADHDTheme.fontSizeSmall,
+                                color: ADHDTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // XP text
+                        Text(
+                          '$currentXP / $maxXP XP',
+                          style: const TextStyle(
+                            fontSize: ADHDTheme.fontSizeSmall,
+                            color: ADHDTheme.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: ADHDTheme.spacingSmall),
+
+                    // Progress bar
+                    _buildProgressBar(progress),
+                  ],
                 ),
               ),
             ],
@@ -211,7 +268,7 @@ class _ProgressBarContent extends StatelessWidget {
   }
 
   /// Build streak badge
-  Widget _buildStreakBadge() {
+  Widget _buildStreakBadge(Locale locale) {
     final emoji = ADHDTheme.getStreakEmoji(streakDays);
 
     return Container(
@@ -239,7 +296,7 @@ class _ProgressBarContent extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            '$streakDays-day streak!',
+            '$streakDays${AppStrings.dayStreak(locale)}',
             style: const TextStyle(
               fontSize: ADHDTheme.fontSizeSmall,
               fontWeight: FontWeight.bold,

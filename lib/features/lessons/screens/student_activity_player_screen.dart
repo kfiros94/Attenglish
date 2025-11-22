@@ -451,68 +451,135 @@ class _StudentActivityPlayerScreenState
 
   /// Show level up celebration dialog
   void _showLevelUpDialog(Map<String, dynamic> levelUpInfo) {
+    final newLevel = levelUpInfo['newLevel'] as int;
+    final levelName = levelUpInfo['levelName'] as String;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.celebration, color: Colors.orange, size: 32),
-            const SizedBox(width: 12),
-            const Text('Level Up!'),
+            const SizedBox(width: 8),
+            const Text(
+              'Level Up!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.arrow_upward_rounded,
-              size: 80,
-              color: Colors.orange,
+            // Animated owl icon with scale effect
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.elasticOut,
+              builder: (context, scale, child) {
+                return Transform.scale(
+                  scale: scale,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.blue.shade50,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Image.asset(
+                      GamificationService.getOwlImageForLevel(newLevel),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback to emoji if image not found
+                        return const Center(
+                          child: Text(
+                            '🦉',
+                            style: TextStyle(fontSize: 60),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'You are now a',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
+
+            const SizedBox(height: 24),
+
             Text(
-              levelUpInfo['levelName'],
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
+              'You are now a',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
               ),
             ),
+
             const SizedBox(height: 8),
+
+            Text(
+              levelName,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 8),
+
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.orange.shade100,
+                color: Colors.blue.shade100,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                'Level ${levelUpInfo['newLevel']}',
-                style: const TextStyle(
-                  fontSize: 18,
+                'Level $newLevel',
+                style: TextStyle(
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.orange,
+                  color: Colors.blue.shade700,
                 ),
               ),
             ),
           ],
         ),
         actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            ),
-            child: const Text(
-              'Awesome!',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text(
+                'Awesome! 🎉',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         ],

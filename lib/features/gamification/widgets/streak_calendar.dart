@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/adhd_theme.dart';
 import '../../auth/services/auth_service.dart';
+import '../../../core/services/localization_service.dart';
+import '../../../core/constants/app_strings.dart';
 
 /// Streak Calendar Widget
 /// Shows visual calendar of last 7 days with activity checkmarks
@@ -17,27 +19,34 @@ class StreakCalendar extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    // Listen to locale changes to rebuild when language changes
+    return StreamBuilder<Locale>(
+      stream: LocalizationService.instance.localeStream,
+      initialData: LocalizationService.instance.currentLocale,
+      builder: (context, localeSnapshot) {
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        final userData = snapshot.data!.data() as Map<String, dynamic>;
-        final currentStreak = userData['currentStreak'] as int? ?? 0;
-        final longestStreak = userData['longestStreak'] as int? ?? 0;
-        final lastActivityDate = userData['lastActivityDate'] != null
-            ? DateTime.parse(userData['lastActivityDate'] as String)
-            : null;
+            final userData = snapshot.data!.data() as Map<String, dynamic>;
+            final currentStreak = userData['currentStreak'] as int? ?? 0;
+            final longestStreak = userData['longestStreak'] as int? ?? 0;
+            final lastActivityDate = userData['lastActivityDate'] != null
+                ? DateTime.parse(userData['lastActivityDate'] as String)
+                : null;
 
-        return _StreakCalendarContent(
-          currentStreak: currentStreak,
-          longestStreak: longestStreak,
-          lastActivityDate: lastActivityDate,
+            return _StreakCalendarContent(
+              currentStreak: currentStreak,
+              longestStreak: longestStreak,
+              lastActivityDate: lastActivityDate,
+            );
+          },
         );
       },
     );
@@ -58,6 +67,8 @@ class _StreakCalendarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = LocalizationService.instance.currentLocale;
+
     return Container(
       padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
       decoration: BoxDecoration(
@@ -86,9 +97,9 @@ class _StreakCalendarContent extends StatelessWidget {
                 style: TextStyle(fontSize: 28),
               ),
               const SizedBox(width: ADHDTheme.spacingSmall),
-              const Text(
-                'Daily Streak',
-                style: TextStyle(
+              Text(
+                AppStrings.dailyStreak(locale),
+                style: const TextStyle(
                   fontSize: ADHDTheme.fontSizeLarge,
                   fontWeight: FontWeight.bold,
                   color: ADHDTheme.textPrimary,
@@ -103,7 +114,7 @@ class _StreakCalendarContent extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStreakStat(
-                label: 'Current Streak',
+                label: AppStrings.currentStreak(locale),
                 value: currentStreak,
                 color: ADHDTheme.accentOrange,
               ),
@@ -113,7 +124,7 @@ class _StreakCalendarContent extends StatelessWidget {
                 color: ADHDTheme.progressEmpty,
               ),
               _buildStreakStat(
-                label: 'Longest Streak',
+                label: AppStrings.longestStreak(locale),
                 value: longestStreak,
                 color: ADHDTheme.primaryBlue,
               ),
@@ -122,7 +133,7 @@ class _StreakCalendarContent extends StatelessWidget {
           const SizedBox(height: ADHDTheme.spacingLarge),
 
           // 7-day calendar view
-          _build7DayCalendar(),
+          _build7DayCalendar(locale),
         ],
       ),
     );
@@ -157,7 +168,7 @@ class _StreakCalendarContent extends StatelessWidget {
   }
 
   /// Build 7-day calendar view showing activity
-  Widget _build7DayCalendar() {
+  Widget _build7DayCalendar(Locale locale) {
     final today = DateTime.now();
     final todayNormalized = DateTime(today.year, today.month, today.day);
     final lastActivityNormalized = lastActivityDate != null
@@ -182,9 +193,9 @@ class _StreakCalendarContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Last 7 Days',
-          style: TextStyle(
+        Text(
+          AppStrings.last7Days(locale),
+          style: const TextStyle(
             fontSize: ADHDTheme.fontSizeSmall,
             fontWeight: FontWeight.w600,
             color: ADHDTheme.textSecondary,

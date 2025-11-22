@@ -295,4 +295,26 @@ class AppStrings {
   static String adminSignupMessage(Locale locale) => _isHebrew(locale)
       ? 'בתור מנהל, תוכל ליצור חשבונות מורים ולנהל את המערכת'
       : 'As an admin, you can create teacher accounts and manage the system';
+
+  // Gamification - Progress Bar
+  static String yourProgress(Locale locale) =>
+      _isHebrew(locale) ? 'ההתקדמות שלך' : 'Your Progress';
+
+  static String level(Locale locale) => _isHebrew(locale) ? 'רמה' : 'Level';
+
+  static String dayStreak(Locale locale) =>
+      _isHebrew(locale) ? 'רצף ימים!' : '-day streak!';
+
+  // Gamification - Streak Calendar
+  static String dailyStreak(Locale locale) =>
+      _isHebrew(locale) ? 'רצף יומי' : 'Daily Streak';
+
+  static String currentStreak(Locale locale) =>
+      _isHebrew(locale) ? 'רצף נוכחי' : 'Current Streak';
+
+  static String longestStreak(Locale locale) =>
+      _isHebrew(locale) ? 'הרצף הארוך ביותר' : 'Longest Streak';
+
+  static String last7Days(Locale locale) =>
+      _isHebrew(locale) ? '7 ימים אחרונים' : 'Last 7 Days';
 }

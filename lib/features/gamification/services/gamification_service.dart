@@ -252,4 +252,21 @@ class GamificationService {
 
     return (xpIntoLevel / xpNeededForLevel).clamp(0.0, 1.0);
   }
+
+  /// Returns the asset path for the owl icon based on student level
+  static String getOwlImageForLevel(int level) {
+    if (level <= 2) {
+      return 'assets/images/levels/hatchling.png';
+    } else if (level <= 5) {
+      return 'assets/images/levels/fledgling.png';
+    } else if (level <= 9) {
+      return 'assets/images/levels/young_owl.png';
+    } else if (level <= 14) {
+      return 'assets/images/levels/wise_owl.png';
+    } else if (level <= 19) {
+      return 'assets/images/levels/master_owl.png';
+    } else {
+      return 'assets/images/levels/legendary_owl.png';
+    }
+  }
 }
