@@ -4,6 +4,8 @@ import '../widgets/activities/multiple_choice_widget.dart';
 import '../widgets/activities/fill_blank_widget.dart';
 import '../widgets/activities/true_false_widget.dart';
 import '../widgets/activities/drag_drop_widget.dart';
+import '../../gamification/services/gamification_service.dart';
+import '../../auth/services/auth_service.dart';
 
 /// Activity Player Screen for Students
 ///
@@ -28,12 +30,35 @@ class _StudentActivityPlayerScreenState
     extends State<StudentActivityPlayerScreen> {
   int _currentActivityIndex = 0;
   int _totalScore = 0;
+  int _totalXpEarned = 0;
   late List<bool> _completedActivities;
+  final _gamificationService = GamificationService();
+  bool _isFirstActivityOfDay = true;
 
   @override
   void initState() {
     super.initState();
     _completedActivities = List.filled(widget.activities.length, false);
+    _checkAndUpdateStreak();
+  }
+
+  /// Check and update daily streak on first activity
+  Future<void> _checkAndUpdateStreak() async {
+    if (_isFirstActivityOfDay) {
+      final currentUser = AuthService.instance.currentUser;
+      if (currentUser != null) {
+        try {
+          final streakResult =
+              await _gamificationService.updateDailyStreak(currentUser.uid);
+          if (mounted && streakResult['earnedStreakBonus'] == true) {
+            _showStreakBonusSnackbar(streakResult);
+          }
+          _isFirstActivityOfDay = false;
+        } catch (e) {
+          print('Error updating streak: $e');
+        }
+      }
+    }
   }
 
   @override
@@ -156,7 +181,7 @@ class _StudentActivityPlayerScreenState
     }
   }
 
-  void _onActivityAnswered(bool isCorrect, int points) {
+  void _onActivityAnswered(bool isCorrect, int points) async {
     setState(() {
       // Mark as completed
       _completedActivities[_currentActivityIndex] = true;
@@ -165,22 +190,121 @@ class _StudentActivityPlayerScreenState
       if (isCorrect) {
         _totalScore += points;
       }
-
-      // Check if last activity
-      if (_currentActivityIndex >= widget.activities.length - 1) {
-        // Show completion dialog
-        _showCompletionDialog();
-      } else {
-        // Move to next activity after delay
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            setState(() {
-              _currentActivityIndex++;
-            });
-          }
-        });
-      }
     });
+
+    // Award XP for activity completion
+    if (isCorrect) {
+      await _awardXpForActivity(isCorrect);
+    }
+
+    // Check if last activity
+    if (_currentActivityIndex >= widget.activities.length - 1) {
+      // Award lesson completion bonus XP
+      await _awardLessonCompletionXp();
+      // Show completion dialog
+      _showCompletionDialog();
+    } else {
+      // Move to next activity after delay
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _currentActivityIndex++;
+          });
+        }
+      });
+    }
+  }
+
+  /// Award XP for completing an activity
+  Future<void> _awardXpForActivity(bool isPerfect) async {
+    final currentUser = AuthService.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      final activity = widget.activities[_currentActivityIndex];
+      final result = await _gamificationService.awardXpForActivityCompletion(
+        userId: currentUser.uid,
+        activityType: activity.type,
+        isPerfect: isPerfect,
+      );
+
+      setState(() {
+        _totalXpEarned += result['xpEarned'] as int;
+      });
+
+      // Show XP earned
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star, color: Colors.yellow),
+                const SizedBox(width: 8),
+                Text('+${result['xpEarned']} XP'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Show level up dialog if leveled up
+        if (result['didLevelUp'] == true) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            _showLevelUpDialog(result);
+          }
+        }
+      }
+    } catch (e) {
+      print('Error awarding XP: $e');
+    }
+  }
+
+  /// Award bonus XP for completing entire lesson
+  Future<void> _awardLessonCompletionXp() async {
+    final currentUser = AuthService.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      final result = await _gamificationService.awardXpForLessonCompletion(
+        userId: currentUser.uid,
+        activitiesCompleted: widget.activities.length,
+      );
+
+      setState(() {
+        _totalXpEarned += result['xpEarned'] as int;
+      });
+
+      // Show lesson completion XP bonus
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.emoji_events, color: Colors.yellow),
+                const SizedBox(width: 8),
+                Text('Lesson Complete! +${result['xpEarned']} XP'),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Show level up dialog if leveled up
+        if (result['didLevelUp'] == true) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            _showLevelUpDialog(result);
+          }
+        }
+      }
+    } catch (e) {
+      print('Error awarding lesson completion XP: $e');
+    }
   }
 
   void _onBackPressed() {
@@ -271,6 +395,32 @@ class _StudentActivityPlayerScreenState
                 ],
               ),
             ),
+            const SizedBox(height: 8),
+            // Show total XP earned
+            if (_totalXpEarned > 0)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.shade200, width: 2),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber),
+                    const SizedBox(width: 8),
+                    Text(
+                      '+$_totalXpEarned XP Earned!',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 16),
             Text(
               'Activities: ${widget.activities.length}/${widget.activities.length}',
@@ -295,6 +445,97 @@ class _StudentActivityPlayerScreenState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Show level up celebration dialog
+  void _showLevelUpDialog(Map<String, dynamic> levelUpInfo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.celebration, color: Colors.orange, size: 32),
+            const SizedBox(width: 12),
+            const Text('Level Up!'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.arrow_upward_rounded,
+              size: 80,
+              color: Colors.orange,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'You are now a',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              levelUpInfo['levelName'],
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Level ${levelUpInfo['newLevel']}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            ),
+            child: const Text(
+              'Awesome!',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show streak bonus notification
+  void _showStreakBonusSnackbar(Map<String, dynamic> streakResult) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.local_fire_department, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text(
+              '🔥 ${streakResult['currentStreak']} Day Streak! +${streakResult['streakBonusXp']} XP',
+            ),
+          ],
+        ),
+        backgroundColor: Colors.deepOrange,
+        duration: const Duration(seconds: 3),
       ),
     );
   }

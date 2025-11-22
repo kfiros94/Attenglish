@@ -1,25 +1,76 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/adhd_theme.dart';
+import '../../features/auth/services/auth_service.dart';
+import '../../features/gamification/services/gamification_service.dart';
 
 /// ADHD-friendly progress bar showing level, XP, and streak
 /// Visually engaging with colors and animations
+/// Now fetches real data from Firestore
 class StudentProgressBar extends StatelessWidget {
+  const StudentProgressBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = AuthService.instance.currentUser?.uid;
+
+    if (userId == null) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final userData = snapshot.data!.data() as Map<String, dynamic>;
+        final xp = userData['xpPoints'] as int? ?? 0;
+        final level = userData['currentLevel'] as int? ?? 1;
+        final streak = userData['currentStreak'] as int? ?? 0;
+
+        final gamificationService = GamificationService();
+        final progress = gamificationService.getProgressToNextLevel(xp);
+        final nextLevelXp = gamificationService.getXpForNextLevel(xp);
+        final levelName = gamificationService.getLevelName(level);
+
+        return _ProgressBarContent(
+          level: level,
+          levelName: levelName,
+          currentXP: xp,
+          maxXP: nextLevelXp,
+          streakDays: streak,
+          progress: progress,
+        );
+      },
+    );
+  }
+}
+
+/// Internal widget for progress bar content
+class _ProgressBarContent extends StatelessWidget {
   final int level;
+  final String levelName;
   final int currentXP;
   final int maxXP;
   final int streakDays;
+  final double progress;
 
-  const StudentProgressBar({
-    super.key,
+  const _ProgressBarContent({
     required this.level,
+    required this.levelName,
     required this.currentXP,
     required this.maxXP,
     required this.streakDays,
+    required this.progress,
   });
 
   @override
   Widget build(BuildContext context) {
-    final progress = maxXP > 0 ? currentXP / maxXP : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
@@ -61,13 +112,25 @@ class StudentProgressBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Level $level',
-                style: const TextStyle(
-                  fontSize: ADHDTheme.fontSizeMedium,
-                  fontWeight: FontWeight.bold,
-                  color: ADHDTheme.primaryBlue,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    levelName,
+                    style: const TextStyle(
+                      fontSize: ADHDTheme.fontSizeMedium,
+                      fontWeight: FontWeight.bold,
+                      color: ADHDTheme.primaryBlue,
+                    ),
+                  ),
+                  Text(
+                    'Level $level',
+                    style: const TextStyle(
+                      fontSize: ADHDTheme.fontSizeSmall,
+                      color: ADHDTheme.textSecondary,
+                    ),
+                  ),
+                ],
               ),
               Text(
                 '$currentXP / $maxXP XP',

@@ -11,6 +11,14 @@ class UserModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
+  // Gamification fields
+  final int xpPoints;              // Total XP earned
+  final int currentLevel;          // Current level (1-20+)
+  final int currentStreak;         // Current consecutive days
+  final int longestStreak;         // Longest streak ever
+  final DateTime? lastActivityDate; // Last day student did activity
+  final Map<String, int> xpHistory; // Daily XP earned (date -> xp)
+
   const UserModel({
     required this.id,
     required this.userName,
@@ -23,6 +31,12 @@ class UserModel {
     this.classId,
     required this.createdAt,
     this.updatedAt,
+    this.xpPoints = 0,
+    this.currentLevel = 1,
+    this.currentStreak = 0,
+    this.longestStreak = 0,
+    this.lastActivityDate,
+    this.xpHistory = const {},
   });
 
   /// Factory constructor to create a UserModel from Firestore JSON
@@ -41,6 +55,16 @@ class UserModel {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
+      xpPoints: json['xpPoints'] as int? ?? 0,
+      currentLevel: json['currentLevel'] as int? ?? 1,
+      currentStreak: json['currentStreak'] as int? ?? 0,
+      longestStreak: json['longestStreak'] as int? ?? 0,
+      lastActivityDate: json['lastActivityDate'] != null
+          ? DateTime.parse(json['lastActivityDate'] as String)
+          : null,
+      xpHistory: json['xpHistory'] != null
+          ? Map<String, int>.from(json['xpHistory'] as Map)
+          : {},
     );
   }
 
@@ -58,6 +82,12 @@ class UserModel {
       'classId': classId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'xpPoints': xpPoints,
+      'currentLevel': currentLevel,
+      'currentStreak': currentStreak,
+      'longestStreak': longestStreak,
+      'lastActivityDate': lastActivityDate?.toIso8601String(),
+      'xpHistory': xpHistory,
     };
   }
 
@@ -74,6 +104,12 @@ class UserModel {
     String? classId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? xpPoints,
+    int? currentLevel,
+    int? currentStreak,
+    int? longestStreak,
+    DateTime? lastActivityDate,
+    Map<String, int>? xpHistory,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -87,6 +123,12 @@ class UserModel {
       classId: classId ?? this.classId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      xpPoints: xpPoints ?? this.xpPoints,
+      currentLevel: currentLevel ?? this.currentLevel,
+      currentStreak: currentStreak ?? this.currentStreak,
+      longestStreak: longestStreak ?? this.longestStreak,
+      lastActivityDate: lastActivityDate ?? this.lastActivityDate,
+      xpHistory: xpHistory ?? this.xpHistory,
     );
   }
 
@@ -105,7 +147,12 @@ class UserModel {
         other.grade == grade &&
         other.classId == classId &&
         other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+        other.updatedAt == updatedAt &&
+        other.xpPoints == xpPoints &&
+        other.currentLevel == currentLevel &&
+        other.currentStreak == currentStreak &&
+        other.longestStreak == longestStreak &&
+        other.lastActivityDate == lastActivityDate;
   }
 
   @override
@@ -120,11 +167,16 @@ class UserModel {
         grade.hashCode ^
         classId.hashCode ^
         createdAt.hashCode ^
-        updatedAt.hashCode;
+        updatedAt.hashCode ^
+        xpPoints.hashCode ^
+        currentLevel.hashCode ^
+        currentStreak.hashCode ^
+        longestStreak.hashCode ^
+        lastActivityDate.hashCode;
   }
 
   @override
   String toString() {
-    return 'UserModel(id: $id, userName: $userName, fullName: $fullName, email: $email, role: $role, schoolName: $schoolName, city: $city, grade: $grade, classId: $classId, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'UserModel(id: $id, userName: $userName, fullName: $fullName, email: $email, role: $role, schoolName: $schoolName, city: $city, grade: $grade, classId: $classId, createdAt: $createdAt, updatedAt: $updatedAt, xpPoints: $xpPoints, currentLevel: $currentLevel, currentStreak: $currentStreak, longestStreak: $longestStreak, lastActivityDate: $lastActivityDate)';
   }
 }

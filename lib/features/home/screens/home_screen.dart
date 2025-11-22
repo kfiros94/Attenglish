@@ -20,6 +20,7 @@ import '../../lessons/screens/student_lesson_viewer.dart';
 import '../../../core/theme/adhd_theme.dart';
 import '../../ai_generation/services/test_ai_service.dart';
 import '../../ai_generation/screens/ai_generator_screen.dart';
+import '../../gamification/widgets/streak_calendar.dart';
 
 /// Home screen with personalized greeting and user dashboard
 class HomeScreen extends StatefulWidget {
@@ -563,22 +564,21 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: ADHDTheme.spacingXLarge),
 
-        // 2. Progress bar section
-        StudentProgressBar(
-          level: 3, // TODO: Get from user data
-          currentXP: 250, // TODO: Get from user data
-          maxXP: 500, // TODO: Calculate based on level
-          streakDays: 5, // TODO: Get from user data
-        ),
+        // 2. Progress bar section (now fetches real data from Firestore)
+        const StudentProgressBar(),
         const SizedBox(height: ADHDTheme.spacingXLarge),
 
-        // 3. Classroom info (only for students)
+        // 3. Streak Calendar (shows last 7 days activity)
+        const StreakCalendar(),
+        const SizedBox(height: ADHDTheme.spacingXLarge),
+
+        // 4. Classroom info (only for students)
         if (_userData!.role == 'student') ...[
           const ClassroomInfoWidget(),
           const SizedBox(height: ADHDTheme.spacingXLarge),
         ],
 
-        // 4. Today's Mission section header
+        // 5. Today's Mission section header
         Row(
           children: [
             Text(
@@ -597,7 +597,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: ADHDTheme.spacingMedium),
 
-        // 5. Mission cards (real lessons from teacher)
+        // 6. Mission cards (real lessons from teacher)
         if (_userData!.classId != null)
           StreamBuilder<List<LessonModel>>(
             stream: LessonService.instance.classLessonsStream(_userData!.classId!),
@@ -731,7 +731,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const SizedBox(height: ADHDTheme.spacingLarge),
 
-        // 6. Achievements section
+        // 7. Achievements section
         AchievementSection(
           achievements: Achievement.getSampleAchievements(),
         ),
