@@ -75,6 +75,9 @@ dependencies:
   # URL launcher for opening documents
   url_launcher: ^6.2.2
 
+  # GetWidget UI library
+  getwidget: ^7.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

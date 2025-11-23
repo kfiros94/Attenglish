@@ -317,4 +317,14 @@ class AppStrings {
 
   static String last7Days(Locale locale) =>
       _isHebrew(locale) ? '7 ימים אחרונים' : 'Last 7 Days';
+
+  // Student Tasks/Missions
+  static String allMyTasks(Locale locale) =>
+      _isHebrew(locale) ? 'כל המשימות שלי' : 'All My Tasks';
+
+  static String viewAllTasks(Locale locale) =>
+      _isHebrew(locale) ? 'צפה בכל המשימות' : 'View All Tasks';
+
+  static String todaysMission(Locale locale) =>
+      _isHebrew(locale) ? 'המשימה שלך היום' : 'Today\'s Mission';
 }

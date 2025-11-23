@@ -21,6 +21,8 @@ import '../../../core/theme/adhd_theme.dart';
 import '../../ai_generation/services/test_ai_service.dart';
 import '../../ai_generation/screens/ai_generator_screen.dart';
 import '../../gamification/widgets/streak_calendar.dart';
+import '../../lessons/screens/student_all_tasks_screen.dart';
+import 'package:getwidget/getwidget.dart';
 
 /// Home screen with personalized greeting and user dashboard
 class HomeScreen extends StatefulWidget {
@@ -587,7 +589,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: ADHDTheme.spacingSmall),
             Text(
-              isRTL ? 'המשימה שלך היום' : 'Today\'s Mission',
+              AppStrings.todaysMission(_currentLocale),
               style: ADHDTheme.studentTextTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: ADHDTheme.textPrimary,
@@ -673,29 +675,102 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Show up to 3 most recent lessons
               return Column(
-                children: lessons.take(3).map((lesson) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: ADHDTheme.spacingMedium),
-                    child: MissionCard(
-                      icon: _getLessonIcon(lesson.topic),
-                      title: lesson.title,
-                      subtitle: lesson.description ??
-                          (isRTL ? 'שיעור חדש מהמורה שלך!' : 'New lesson from your teacher!'),
-                      durationMinutes: 5,
-                      points: _calculatePoints(lesson.difficulty),
-                      type: MissionType.lesson,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => StudentLessonViewer(
-                              lessonId: lesson.id,
+                children: [
+                  ...lessons.take(3).map((lesson) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: ADHDTheme.spacingMedium),
+                      child: MissionCard(
+                        icon: _getLessonIcon(lesson.topic),
+                        title: lesson.title,
+                        subtitle: lesson.description ??
+                            (isRTL ? 'שיעור חדש מהמורה שלך!' : 'New lesson from your teacher!'),
+                        durationMinutes: 5,
+                        points: _calculatePoints(lesson.difficulty),
+                        type: MissionType.lesson,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => StudentLessonViewer(
+                                lessonId: lesson.id,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }),
+
+                  // "All My Tasks" button - only show if there are more than 3 lessons
+                  if (lessons.length > 3)
+                    Padding(
+                      padding: const EdgeInsets.only(top: ADHDTheme.spacingMedium),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              ADHDTheme.secondaryGreen,
+                              ADHDTheme.primaryBlue,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(ADHDTheme.radiusCircle),
+                          boxShadow: [
+                            BoxShadow(
+                              color: ADHDTheme.secondaryGreen.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const StudentAllTasksScreen(),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(ADHDTheme.radiusCircle),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: ADHDTheme.spacingMedium + 4,
+                                horizontal: ADHDTheme.spacingLarge,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.view_list_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: ADHDTheme.spacingSmall),
+                                  Text(
+                                    AppStrings.viewAllTasks(_currentLocale),
+                                    style: const TextStyle(
+                                      fontSize: ADHDTheme.fontSizeLarge,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: ADHDTheme.spacingSmall),
+                                  const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
-                  );
-                }).toList(),
+                ],
               );
             },
           )
