@@ -4,6 +4,7 @@ import '../../../core/theme/adhd_theme.dart';
 import '../../auth/services/auth_service.dart';
 import '../../../core/services/localization_service.dart';
 import '../../../core/constants/app_strings.dart';
+import '../services/gamification_service.dart';
 
 /// Streak Calendar Widget
 /// Shows visual calendar of last 7 days with activity checkmarks
@@ -35,11 +36,22 @@ class StreakCalendar extends StatelessWidget {
             }
 
             final userData = snapshot.data!.data() as Map<String, dynamic>;
-            final currentStreak = userData['currentStreak'] as int? ?? 0;
+            final storedStreak = userData['currentStreak'] as int? ?? 0;
             final longestStreak = userData['longestStreak'] as int? ?? 0;
             final lastActivityDate = userData['lastActivityDate'] != null
                 ? DateTime.parse(userData['lastActivityDate'] as String)
                 : null;
+
+            // Validate the streak - it should be 0 if more than 1 day has passed
+            final currentStreak = GamificationService.getValidStreak(
+              storedStreak: storedStreak,
+              lastActivityDate: lastActivityDate,
+            );
+
+            // Reset streak in database if it's broken
+            if (currentStreak == 0 && storedStreak > 0) {
+              _resetStreakInDatabase(userId);
+            }
 
             return _StreakCalendarContent(
               currentStreak: currentStreak,
@@ -50,6 +62,15 @@ class StreakCalendar extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Reset the streak in the database (fire and forget)
+  void _resetStreakInDatabase(String userId) {
+    FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'currentStreak': 0,
+    }).catchError((error) {
+      debugPrint('Error resetting streak: $error');
+    });
   }
 }
 

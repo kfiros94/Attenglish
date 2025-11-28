@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../auth/models/user_model.dart';
 
 /// Gamification Service
 /// Handles XP points, leveling system, and daily streaks for students
@@ -251,6 +250,62 @@ class GamificationService {
     final xpNeededForLevel = nextLevelXp - currentLevelMinXp;
 
     return (xpIntoLevel / xpNeededForLevel).clamp(0.0, 1.0);
+  }
+
+  /// Check if streak should be broken based on last activity date
+  /// Returns the actual current streak (0 if broken, or the stored value if still valid)
+  static int getValidStreak({
+    required int storedStreak,
+    required DateTime? lastActivityDate,
+  }) {
+    if (lastActivityDate == null || storedStreak == 0) {
+      return 0;
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final lastActivityDay = DateTime(
+      lastActivityDate.year,
+      lastActivityDate.month,
+      lastActivityDate.day,
+    );
+
+    final daysSinceActivity = today.difference(lastActivityDay).inDays;
+
+    // If more than 1 day has passed since last activity, streak is broken
+    if (daysSinceActivity > 1) {
+      return 0;
+    }
+
+    return storedStreak;
+  }
+
+  /// Check and reset streak if needed (called when displaying streak)
+  Future<int> checkAndResetStreak(String userId) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+    final userDoc = await userRef.get();
+
+    if (!userDoc.exists) return 0;
+
+    final userData = userDoc.data()!;
+    final storedStreak = userData['currentStreak'] as int? ?? 0;
+    final lastActivityDate = userData['lastActivityDate'] != null
+        ? DateTime.parse(userData['lastActivityDate'] as String)
+        : null;
+
+    final validStreak = getValidStreak(
+      storedStreak: storedStreak,
+      lastActivityDate: lastActivityDate,
+    );
+
+    // If streak is broken, update the database
+    if (validStreak == 0 && storedStreak > 0) {
+      await userRef.update({
+        'currentStreak': 0,
+      });
+    }
+
+    return validStreak;
   }
 
   /// Returns the asset path for the owl icon based on student level
