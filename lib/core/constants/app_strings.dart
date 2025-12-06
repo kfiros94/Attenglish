@@ -327,4 +327,16 @@ class AppStrings {
 
   static String todaysMission(Locale locale) =>
       _isHebrew(locale) ? 'המשימה שלך היום' : 'Today\'s Mission';
+
+  static String done(Locale locale) =>
+      _isHebrew(locale) ? 'הושלם' : 'DONE';
+
+  static String lessonCompleted(Locale locale) =>
+      _isHebrew(locale) ? 'השיעור הושלם!' : 'Lesson Completed!';
+
+  static String noPointsEarned(Locale locale) =>
+      _isHebrew(locale) ? 'כבר השלמת שיעור זה' : 'You already completed this lesson';
+
+  static String pointsEarned(Locale locale) =>
+      _isHebrew(locale) ? 'נקודות שהרווחת' : 'Points Earned';
 }

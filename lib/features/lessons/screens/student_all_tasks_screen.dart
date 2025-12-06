@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:getwidget/getwidget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/adhd_theme.dart';
 import '../../../core/services/localization_service.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../features/auth/services/auth_service.dart';
+import '../../../features/gamification/services/gamification_service.dart';
 import '../models/lesson_model.dart';
 import '../services/lesson_service.dart';
 import 'student_lesson_viewer.dart';
@@ -134,39 +136,57 @@ class _StudentAllTasksScreenState extends State<StudentAllTasksScreen> {
 
   /// Build lessons list with GetWidget cards
   Widget _buildLessonsList(List<LessonModel> lessons, bool isRTL) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(ADHDTheme.spacingLarge),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with count
-          GFCard(
-            color: ADHDTheme.primaryBlue.withOpacity(0.1),
-            elevation: 0,
-            content: Row(
-              children: [
-                const Text('📚', style: TextStyle(fontSize: 32)),
-                const SizedBox(width: ADHDTheme.spacingSmall),
-                Expanded(
-                  child: Text(
-                    isRTL
-                        ? 'יש לך ${lessons.length} משימות זמינות'
-                        : 'You have ${lessons.length} available tasks',
-                    style: const TextStyle(
-                      fontSize: ADHDTheme.fontSizeLarge,
-                      fontWeight: FontWeight.bold,
-                      color: ADHDTheme.primaryBlue,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: ADHDTheme.spacingLarge),
+    final userId = AuthService.instance.currentUser?.uid;
+    if (userId == null) return const SizedBox.shrink();
 
-          // All lessons using GetWidget cards
-          ...lessons.map((lesson) {
-            final isNew = _isLessonNew(lesson);
+    // Stream user data to get completed lessons in real-time
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, userSnapshot) {
+        final completedLessons = <String>[];
+        if (userSnapshot.hasData && userSnapshot.data!.exists) {
+          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+          final completed = userData['completedLessons'] as List? ?? [];
+          completedLessons.addAll(completed.cast<String>());
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(ADHDTheme.spacingLarge),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with count
+              GFCard(
+                color: ADHDTheme.primaryBlue.withOpacity(0.1),
+                elevation: 0,
+                content: Row(
+                  children: [
+                    const Text('📚', style: TextStyle(fontSize: 32)),
+                    const SizedBox(width: ADHDTheme.spacingSmall),
+                    Expanded(
+                      child: Text(
+                        isRTL
+                            ? 'יש לך ${lessons.length} משימות זמינות'
+                            : 'You have ${lessons.length} available tasks',
+                        style: const TextStyle(
+                          fontSize: ADHDTheme.fontSizeLarge,
+                          fontWeight: FontWeight.bold,
+                          color: ADHDTheme.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: ADHDTheme.spacingLarge),
+
+              // All lessons using GetWidget cards
+              ...lessons.map((lesson) {
+                final isNew = _isLessonNew(lesson);
+                final isCompleted = completedLessons.contains(lesson.id);
             return Padding(
               padding: const EdgeInsets.only(bottom: ADHDTheme.spacingMedium),
               child: GFCard(
@@ -230,8 +250,18 @@ class _StudentAllTasksScreenState extends State<StudentAllTasksScreen> {
                                           ),
                                         ),
                                       ),
-                                      // NEW badge (only if created within last 7 days)
-                                      if (isNew)
+                                      // DONE badge if completed
+                                      if (isCompleted)
+                                        GFBadge(
+                                          text: AppStrings.done(_currentLocale),
+                                          color: ADHDTheme.secondaryGreen,
+                                          textColor: Colors.white,
+                                          shape: GFBadgeShape.pills,
+                                          size: GFSize.SMALL,
+                                        ),
+                                      // NEW badge (only if created within last 7 days and not completed)
+                                      if (isNew && !isCompleted) ...[
+                                        const SizedBox(width: 4),
                                         GFBadge(
                                           text: 'NEW',
                                           color: ADHDTheme.primaryBlue,
@@ -239,6 +269,7 @@ class _StudentAllTasksScreenState extends State<StudentAllTasksScreen> {
                                           shape: GFBadgeShape.pills,
                                           size: GFSize.SMALL,
                                         ),
+                                      ],
                                     ],
                                   ),
                                   const SizedBox(height: 4),
@@ -298,9 +329,11 @@ class _StudentAllTasksScreenState extends State<StudentAllTasksScreen> {
                 ),
               ),
             );
-          }),
-        ],
-      ),
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 

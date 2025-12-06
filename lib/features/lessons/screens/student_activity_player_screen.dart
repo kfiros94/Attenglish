@@ -14,11 +14,13 @@ import '../../auth/services/auth_service.dart';
 class StudentActivityPlayerScreen extends StatefulWidget {
   final List<ActivityModel> activities;
   final String lessonTitle;
+  final String lessonId;
 
   const StudentActivityPlayerScreen({
     super.key,
     required this.activities,
     required this.lessonTitle,
+    required this.lessonId,
   });
 
   @override
@@ -262,43 +264,67 @@ class _StudentActivityPlayerScreenState
     }
   }
 
-  /// Award bonus XP for completing entire lesson
+  /// Award bonus XP for completing entire lesson (only first time)
   Future<void> _awardLessonCompletionXp() async {
     final currentUser = AuthService.instance.currentUser;
     if (currentUser == null) return;
 
     try {
-      final result = await _gamificationService.awardXpForLessonCompletion(
+      // Use completeLessonWithReward to check if already completed
+      final result = await _gamificationService.completeLessonWithReward(
         userId: currentUser.uid,
+        lessonId: widget.lessonId,
         activitiesCompleted: widget.activities.length,
       );
 
+      final alreadyCompleted = result['alreadyCompleted'] as bool;
+      final xpEarned = result['xpEarned'] as int;
+
       setState(() {
-        _totalXpEarned += result['xpEarned'] as int;
+        _totalXpEarned += xpEarned;
       });
 
-      // Show lesson completion XP bonus
+      // Show lesson completion XP bonus OR already completed message
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.emoji_events, color: Colors.yellow),
-                const SizedBox(width: 8),
-                Text('Lesson Complete! +${result['xpEarned']} XP'),
-              ],
+        if (alreadyCompleted) {
+          // Show message that lesson was already completed
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text('Lesson already completed - no XP earned this time'),
+                ],
+              ),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 3),
             ),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+          );
+        } else {
+          // Show XP earned message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.emoji_events, color: Colors.yellow),
+                  const SizedBox(width: 8),
+                  Text('Lesson Complete! +$xpEarned XP'),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
+            ),
+          );
 
-        // Show level up dialog if leveled up
-        if (result['didLevelUp'] == true) {
-          await Future.delayed(const Duration(milliseconds: 500));
-          if (mounted) {
-            _showLevelUpDialog(result);
+          // Show level up dialog if leveled up
+          if (result['didLevelUp'] == true) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            if (mounted) {
+              _showLevelUpDialog(result);
+            }
           }
         }
       }

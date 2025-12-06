@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../features/auth/services/auth_service.dart';
 import '../../../features/auth/models/user_model.dart';
 import '../../../shared/widgets/mascot_widget.dart';
@@ -673,32 +674,47 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
 
-              // Show up to 3 most recent lessons
-              return Column(
-                children: [
-                  ...lessons.take(3).map((lesson) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: ADHDTheme.spacingMedium),
-                      child: MissionCard(
-                        icon: _getLessonIcon(lesson.topic),
-                        title: lesson.title,
-                        subtitle: lesson.description ??
-                            (isRTL ? 'שיעור חדש מהמורה שלך!' : 'New lesson from your teacher!'),
-                        durationMinutes: 5,
-                        points: _calculatePoints(lesson.difficulty),
-                        type: MissionType.lesson,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => StudentLessonViewer(
-                                lessonId: lesson.id,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  }),
+              // Show up to 3 most recent lessons with completion status
+              return StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(_userData!.id)
+                    .snapshots(),
+                builder: (context, userSnapshot) {
+                  final completedLessons = <String>[];
+                  if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                    final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                    final completed = userData['completedLessons'] as List? ?? [];
+                    completedLessons.addAll(completed.cast<String>());
+                  }
+
+                  return Column(
+                    children: [
+                      ...lessons.take(3).map((lesson) {
+                        final isCompleted = completedLessons.contains(lesson.id);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: ADHDTheme.spacingMedium),
+                          child: MissionCard(
+                            icon: _getLessonIcon(lesson.topic),
+                            title: lesson.title,
+                            subtitle: lesson.description ??
+                                (isRTL ? 'שיעור חדש מהמורה שלך!' : 'New lesson from your teacher!'),
+                            durationMinutes: 5,
+                            points: _calculatePoints(lesson.difficulty),
+                            type: MissionType.lesson,
+                            isCompleted: isCompleted,
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => StudentLessonViewer(
+                                    lessonId: lesson.id,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      }),
 
                   // "All My Tasks" button - only show if there are more than 3 lessons
                   if (lessons.length > 3)
@@ -770,7 +786,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-                ],
+                    ],
+                  );
+                },
               );
             },
           )

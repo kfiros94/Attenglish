@@ -111,6 +111,7 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
         builder: (context) => StudentActivityPlayerScreen(
           activities: _lesson!.activities,
           lessonTitle: _lesson!.title,
+          lessonId: _lesson!.id,
         ),
       ),
     );

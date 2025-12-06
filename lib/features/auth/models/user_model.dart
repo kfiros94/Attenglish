@@ -18,6 +18,7 @@ class UserModel {
   final int longestStreak;         // Longest streak ever
   final DateTime? lastActivityDate; // Last day student did activity
   final Map<String, int> xpHistory; // Daily XP earned (date -> xp)
+  final List<String> completedLessons; // IDs of lessons completed (for "DONE" badge)
 
   const UserModel({
     required this.id,
@@ -37,6 +38,7 @@ class UserModel {
     this.longestStreak = 0,
     this.lastActivityDate,
     this.xpHistory = const {},
+    this.completedLessons = const [],
   });
 
   /// Factory constructor to create a UserModel from Firestore JSON
@@ -65,6 +67,9 @@ class UserModel {
       xpHistory: json['xpHistory'] != null
           ? Map<String, int>.from(json['xpHistory'] as Map)
           : {},
+      completedLessons: json['completedLessons'] != null
+          ? List<String>.from(json['completedLessons'] as List)
+          : [],
     );
   }
 
@@ -88,6 +93,7 @@ class UserModel {
       'longestStreak': longestStreak,
       'lastActivityDate': lastActivityDate?.toIso8601String(),
       'xpHistory': xpHistory,
+      'completedLessons': completedLessons,
     };
   }
 
@@ -110,6 +116,7 @@ class UserModel {
     int? longestStreak,
     DateTime? lastActivityDate,
     Map<String, int>? xpHistory,
+    List<String>? completedLessons,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -129,6 +136,7 @@ class UserModel {
       longestStreak: longestStreak ?? this.longestStreak,
       lastActivityDate: lastActivityDate ?? this.lastActivityDate,
       xpHistory: xpHistory ?? this.xpHistory,
+      completedLessons: completedLessons ?? this.completedLessons,
     );
   }
 

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:getwidget/getwidget.dart';
 import '../../../core/theme/adhd_theme.dart';
+import '../../../core/services/localization_service.dart';
+import '../../../core/constants/app_strings.dart';
 
 /// ADHD-friendly mission/lesson card for students
 /// Large, colorful, with clear call-to-action
@@ -11,6 +14,7 @@ class MissionCard extends StatefulWidget {
   final int points;
   final VoidCallback onTap;
   final MissionType type;
+  final bool isCompleted;
 
   const MissionCard({
     super.key,
@@ -21,6 +25,7 @@ class MissionCard extends StatefulWidget {
     required this.points,
     required this.onTap,
     this.type = MissionType.lesson,
+    this.isCompleted = false,
   });
 
   @override
@@ -91,7 +96,10 @@ class _MissionCardState extends State<MissionCard>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildIconCircle(),
-                  _buildTypeLabel(),
+                  if (widget.isCompleted)
+                    _buildDoneBadge()
+                  else
+                    _buildTypeLabel(),
                 ],
               ),
               const SizedBox(height: ADHDTheme.spacingMedium),
@@ -218,6 +226,18 @@ class _MissionCardState extends State<MissionCard>
           color: Colors.white,
         ),
       ),
+    );
+  }
+
+  /// Build DONE badge
+  Widget _buildDoneBadge() {
+    final locale = LocalizationService.instance.currentLocale;
+    return GFBadge(
+      text: AppStrings.done(locale),
+      color: ADHDTheme.secondaryGreen,
+      textColor: Colors.white,
+      shape: GFBadgeShape.pills,
+      size: GFSize.SMALL,
     );
   }
 

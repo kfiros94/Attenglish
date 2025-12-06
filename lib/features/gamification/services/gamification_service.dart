@@ -308,6 +308,76 @@ class GamificationService {
     return validStreak;
   }
 
+  /// Check if a lesson has been completed by the student
+  static Future<bool> isLessonCompleted({
+    required String userId,
+    required String lessonId,
+  }) async {
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+
+    if (!userDoc.exists) return false;
+
+    final userData = userDoc.data()!;
+    final completedLessons = userData['completedLessons'] as List? ?? [];
+
+    return completedLessons.contains(lessonId);
+  }
+
+  /// Mark a lesson as completed (and award XP only if first time)
+  Future<Map<String, dynamic>> completeLessonWithReward({
+    required String userId,
+    required String lessonId,
+    required int activitiesCompleted,
+  }) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+    final userDoc = await userRef.get();
+    final userData = userDoc.data()!;
+
+    final completedLessons = List<String>.from(
+      userData['completedLessons'] as List? ?? [],
+    );
+
+    // Check if already completed
+    final alreadyCompleted = completedLessons.contains(lessonId);
+
+    Map<String, dynamic> result = {
+      'alreadyCompleted': alreadyCompleted,
+      'xpEarned': 0,
+      'newXp': userData['xpPoints'] as int? ?? 0,
+      'newLevel': userData['currentLevel'] as int? ?? 1,
+      'didLevelUp': false,
+    };
+
+    // If already completed, don't award XP
+    if (alreadyCompleted) {
+      return result;
+    }
+
+    // Award XP for first-time completion
+    final xpResult = await awardXpForLessonCompletion(
+      userId: userId,
+      activitiesCompleted: activitiesCompleted,
+    );
+
+    // Mark lesson as completed
+    completedLessons.add(lessonId);
+    await userRef.update({
+      'completedLessons': completedLessons,
+    });
+
+    return {
+      'alreadyCompleted': false,
+      'xpEarned': xpResult['xpEarned'],
+      'newXp': xpResult['newXp'],
+      'newLevel': xpResult['newLevel'],
+      'didLevelUp': xpResult['didLevelUp'],
+      'levelName': xpResult['levelName'],
+    };
+  }
+
   /// Returns the asset path for the owl icon based on student level
   static String getOwlImageForLevel(int level) {
     if (level <= 2) {
