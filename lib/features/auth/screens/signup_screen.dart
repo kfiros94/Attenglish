@@ -438,7 +438,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(height: AppTheme.spacingMedium),
 
-                      // Grade dropdown
+                      // Grade dropdown (1-12)
                       _buildFieldLabel(_currentLocale.languageCode == 'he' ? 'כיתה' : 'Grade'),
                       DropdownButtonFormField<int>(
                         value: _selectedGrade,
@@ -449,7 +449,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             color: AppColors.primary,
                           ),
                         ),
-                        items: List.generate(6, (index) {
+                        items: List.generate(12, (index) {
                           final grade = index + 1;
                           return DropdownMenuItem(
                             value: grade,
