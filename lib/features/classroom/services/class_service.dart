@@ -38,35 +38,45 @@ class ClassService {
   /// Also updates the student's classId in their user document
   Future<void> addStudentToClass(String classId, String studentId) async {
     try {
+      print('🔵 Adding student $studentId to class $classId');
+
       // Get class document
       final classDoc =
           await _firestore.collection(_classesCollection).doc(classId).get();
 
       if (!classDoc.exists) {
+        print('❌ Classroom not found: $classId');
         throw Exception('Classroom not found');
       }
 
       final classData = ClassModel.fromJson(classDoc.data()!);
+      print('✅ Class found: ${classData.name}, current students: ${classData.studentIds.length}');
 
       // Check if student is already in the class
       if (classData.studentIds.contains(studentId)) {
+        print('⚠️ Student already in class');
         return; // Already added
       }
 
       // Update class with new student
       final updatedStudentIds = [...classData.studentIds, studentId];
+      print('🔄 Updating class with ${updatedStudentIds.length} students');
 
       await _firestore.collection(_classesCollection).doc(classId).update({
         'studentIds': updatedStudentIds,
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updatedAt': Timestamp.now(),
       });
+      print('✅ Class updated successfully');
 
       // Update student's user document with classId
+      print('🔄 Updating student document with classId: $classId');
       await _firestore.collection(_usersCollection).doc(studentId).update({
         'classId': classId,
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updatedAt': Timestamp.now(),
       });
+      print('✅ Student added successfully to class $classId');
     } catch (e) {
+      print('❌ Error adding student to classroom: $e');
       throw Exception('Failed to add student to classroom: $e');
     }
   }
@@ -92,13 +102,13 @@ class ClassService {
 
       await _firestore.collection(_classesCollection).doc(classId).update({
         'studentIds': updatedStudentIds,
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updatedAt': Timestamp.now(),
       });
 
       // Remove classId from student's user document
       await _firestore.collection(_usersCollection).doc(studentId).update({
         'classId': FieldValue.delete(),
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updatedAt': Timestamp.now(),
       });
     } catch (e) {
       throw Exception('Failed to remove student from classroom: $e');
@@ -220,25 +230,33 @@ class ClassService {
   /// Delete a classroom
   Future<void> deleteClass(String classId) async {
     try {
+      print('🔵 Deleting classroom: $classId');
+
       // Get class data first to remove classId from all students
       final classDoc =
           await _firestore.collection(_classesCollection).doc(classId).get();
 
       if (classDoc.exists) {
         final classData = ClassModel.fromJson(classDoc.data()!);
+        print('✅ Classroom found: ${classData.name}, students: ${classData.studentIds.length}');
 
         // Remove classId from all students in this classroom
         for (final studentId in classData.studentIds) {
+          print('🔄 Removing classId from student: $studentId');
           await _firestore.collection(_usersCollection).doc(studentId).update({
             'classId': FieldValue.delete(),
-            'updatedAt': DateTime.now().toIso8601String(),
+            'updatedAt': Timestamp.now(),
           });
         }
+        print('✅ Removed classId from all students');
       }
 
       // Delete the classroom document
+      print('🔄 Deleting classroom document');
       await _firestore.collection(_classesCollection).doc(classId).delete();
+      print('✅ Classroom deleted successfully');
     } catch (e) {
+      print('❌ Error deleting classroom: $e');
       throw Exception('Failed to delete classroom: $e');
     }
   }

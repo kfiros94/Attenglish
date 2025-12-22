@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserModel {
   final String id;
   final String userName;
@@ -53,16 +55,16 @@ class UserModel {
       city: json['city'] as String,
       grade: json['grade'] as int?,
       classId: json['classId'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: _parseDateTime(json['createdAt']),
       updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
+          ? _parseDateTime(json['updatedAt'])
           : null,
       xpPoints: json['xpPoints'] as int? ?? 0,
       currentLevel: json['currentLevel'] as int? ?? 1,
       currentStreak: json['currentStreak'] as int? ?? 0,
       longestStreak: json['longestStreak'] as int? ?? 0,
       lastActivityDate: json['lastActivityDate'] != null
-          ? DateTime.parse(json['lastActivityDate'] as String)
+          ? _parseDateTime(json['lastActivityDate'])
           : null,
       xpHistory: json['xpHistory'] != null
           ? Map<String, int>.from(json['xpHistory'] as Map)
@@ -71,6 +73,27 @@ class UserModel {
           ? List<String>.from(json['completedLessons'] as List)
           : [],
     );
+  }
+
+  /// Helper method to parse DateTime from either Timestamp or String
+  /// Handles both Firestore Timestamp objects and ISO 8601 strings
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) {
+      return DateTime.now();
+    }
+
+    // If it's already a Timestamp object, convert to DateTime
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    // If it's a String, parse it
+    if (value is String) {
+      return DateTime.parse(value);
+    }
+
+    // Fallback for any other type
+    return DateTime.now();
   }
 
   /// Convert UserModel to JSON for Firestore

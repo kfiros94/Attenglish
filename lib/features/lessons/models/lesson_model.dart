@@ -157,20 +157,23 @@ class LessonModel {
   }
 
   /// Get difficulty label
+  /// For grades 1-9: displays "Grade X Level"
+  /// For grades 10-12: displays difficulty (Normal/Hard/Very Hard)
   String get difficultyLabel {
-    switch (difficulty) {
-      case 1:
-        return 'Easy';
-      case 2:
-        return 'Medium';
-      case 3:
-        return 'Hard';
-      case 4:
-        return 'Very Hard';
-      case 5:
-        return 'Expert';
-      default:
-        return 'Unknown';
+    if (grade >= 1 && grade <= 9) {
+      return 'Grade $grade Level';
+    } else {
+      // Grades 10-12 use traditional difficulty
+      switch (difficulty) {
+        case 1:
+          return 'Normal';
+        case 2:
+          return 'Hard';
+        case 3:
+          return 'Very Hard';
+        default:
+          return 'Unknown';
+      }
     }
   }
 

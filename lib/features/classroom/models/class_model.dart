@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Model representing a classroom in the system
 class ClassModel {
   final String id;
@@ -32,11 +34,32 @@ class ClassModel {
               ?.map((e) => e as String)
               .toList() ??
           [],
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: _parseDateTime(json['createdAt']),
       updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
+          ? _parseDateTime(json['updatedAt'])
           : null,
     );
+  }
+
+  /// Helper method to parse DateTime from either Timestamp or String
+  /// Handles both Firestore Timestamp objects and ISO 8601 strings
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) {
+      return DateTime.now();
+    }
+
+    // If it's already a Timestamp object, convert to DateTime
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    // If it's a String, parse it
+    if (value is String) {
+      return DateTime.parse(value);
+    }
+
+    // Fallback for any other type
+    return DateTime.now();
   }
 
   /// Convert ClassModel to JSON for Firestore

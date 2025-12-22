@@ -113,12 +113,8 @@ ACTIVITY BREAKDOWN:
 3. True/False: ${config.trueFalseCount} questions
 4. Drag & Drop (Matching): ${config.dragDropCount} questions
 
-DIFFICULTY LEVEL: ${config.difficulty.toUpperCase()}
-- Beginner: Basic vocabulary, simple sentences, obvious answers
-- Intermediate: Moderate vocabulary, some inference needed
-- Advanced: Complex vocabulary, deeper comprehension required
-
-TARGET GRADE: ${config.gradeLevel} grade (adjust complexity accordingly)
+TARGET GRADE: ${config.gradeLevel}
+${_getGradeSpecificGuidelines(config.gradeLevel, config.difficulty)}
 
 IMPORTANT RULES:
 1. ALL questions MUST be answerable from the source text - no external information
@@ -233,5 +229,195 @@ GENERATE ACTIVITIES NOW:
 
     // Default fallback
     return '7-12';
+  }
+
+  /// Generates grade-specific guidelines for question difficulty
+  ///
+  /// For grades 1-9: Uses grade number to determine age-appropriate complexity
+  /// For grades 10-12: Uses teacher-selected difficulty level
+  ///
+  /// Returns detailed guidelines for the AI to create appropriate questions
+  static String _getGradeSpecificGuidelines(String gradeLevel, String difficulty) {
+    final gradeNum = int.tryParse(gradeLevel.replaceAll(RegExp(r'\D'), '')) ?? 5;
+
+    if (gradeNum >= 1 && gradeNum <= 9) {
+      // Grades 1-9: Grade-appropriate difficulty
+      return _getElementaryMiddleSchoolGuidelines(gradeNum);
+    } else {
+      // Grades 10-12: Teacher-selected difficulty
+      return _getHighSchoolGuidelines(difficulty);
+    }
+  }
+
+  /// Elementary and middle school (grades 1-9) guidelines
+  static String _getElementaryMiddleSchoolGuidelines(int grade) {
+    switch (grade) {
+      case 1:
+        return '''
+GRADE 1 LEVEL (Ages 6-7):
+- Use VERY simple vocabulary (cat, dog, run, happy, big, etc.)
+- Questions should be about basic facts clearly stated in the text
+- Sentences should be 3-5 words maximum
+- Use present simple tense only
+- Multiple choice: 1-2 word options
+- Fill in the blank: Single, obvious word (colors, animals, numbers)
+- Example: "The cat is ___." (Answer: "big" from text "The big cat")
+- No inference needed - everything must be DIRECTLY in the text''';
+
+      case 2:
+        return '''
+GRADE 2 LEVEL (Ages 7-8):
+- Simple vocabulary (100-200 most common English words)
+- Questions about obvious facts and simple descriptions
+- Sentences should be 4-7 words
+- Use present simple and simple past
+- Multiple choice: Short phrases (2-3 words)
+- Fill in the blank: Common words for objects, actions, descriptions
+- Example: "What color was the dog?" (Answer directly in text)
+- Minimal inference - 90% direct from text''';
+
+      case 3:
+        return '''
+GRADE 3 LEVEL (Ages 8-9):
+- Elementary vocabulary (300-400 common words)
+- Questions about main ideas and simple sequence
+- Sentences should be 5-10 words
+- Use present, past, and simple future
+- Multiple choice: Simple sentences
+- Can ask "Why?" questions if answer is clearly in text
+- Example: "Why did the boy run home?" (Because text says "ran home to eat dinner")
+- Some simple inference allowed if very obvious''';
+
+      case 4:
+        return '''
+GRADE 4 LEVEL (Ages 9-10):
+- Growing vocabulary (500-600 words)
+- Questions about main ideas, details, and basic cause/effect
+- Sentences should be 6-12 words
+- Can use various tenses appropriately
+- Introduce basic adjectives and adverbs
+- Multiple choice: Full sentences with simple vocabulary
+- Can ask about character feelings if explicitly stated
+- Example: "How did Sarah feel when she won?" (Text says "Sarah was happy when she won")''';
+
+      case 5:
+        return '''
+GRADE 5 LEVEL (Ages 10-11):
+- Intermediate vocabulary (700-900 words)
+- Questions about themes, inferences, and relationships
+- Sentences should be 7-15 words
+- Can include phrasal verbs (give up, look for, etc.)
+- Questions can require simple inference from context
+- Multiple choice: Options can be similar, requiring careful reading
+- Can ask about implied meanings if fairly obvious
+- Example: "What can you infer about the character?" (based on described actions)''';
+
+      case 6:
+        return '''
+GRADE 6 LEVEL (Ages 11-12):
+- Age-appropriate vocabulary (1000-1200 words)
+- Questions about analysis, comparison, and deeper comprehension
+- Sentences should be 8-18 words
+- Can use more complex grammar (conditionals, passive voice)
+- Questions require some inference and critical thinking
+- Multiple choice: Nuanced options requiring careful analysis
+- Can ask about author's purpose and text structure
+- Example: "Why did the author use this example?" (analyzing text structure)''';
+
+      case 7:
+        return '''
+GRADE 7 LEVEL (Ages 12-13):
+- Expanded vocabulary (1300-1600 words)
+- Questions about literary devices, tone, and implicit meanings
+- Sentences should be 10-20 words
+- Complex grammar structures expected
+- Questions require inference, analysis, and evaluation
+- Multiple choice: Similar options requiring deep understanding
+- Can ask about symbolism and figurative language
+- Example: "What does this metaphor suggest about the theme?"''';
+
+      case 8:
+        return '''
+GRADE 8 LEVEL (Ages 13-14):
+- Advanced vocabulary (1700-2000 words)
+- Questions about complex themes, arguments, and perspectives
+- Sentences should be 12-25 words
+- Advanced grammar and varied sentence structures
+- Questions require synthesis and evaluation
+- Multiple choice: Sophisticated options testing deep comprehension
+- Can analyze author's craft and rhetorical devices
+- Example: "How does the author's choice of words affect the tone?"''';
+
+      case 9:
+        return '''
+GRADE 9 LEVEL (Ages 14-15):
+- Pre-high school vocabulary (2000-2500 words)
+- Questions about complex analysis, synthesis, and evaluation
+- Sentences can be 15-30 words with complex structures
+- Academic language and formal register
+- Questions require critical thinking and textual evidence
+- Multiple choice: Nuanced options requiring careful textual analysis
+- Can analyze multiple perspectives and implicit arguments
+- Example: "Analyze how the author develops the central argument through..."''';
+
+      default:
+        return '''
+INTERMEDIATE LEVEL:
+- Age-appropriate vocabulary
+- Mix of literal and inferential questions
+- Clear, well-structured sentences
+- Questions appropriate for middle school students''';
+    }
+  }
+
+  /// High school (grades 10-12) difficulty guidelines
+  static String _getHighSchoolGuidelines(String difficulty) {
+    switch (difficulty.toLowerCase()) {
+      case 'beginner':
+        return '''
+HIGH SCHOOL - NORMAL DIFFICULTY:
+- Standard high school vocabulary (2500-3000 words)
+- Questions test comprehension, basic analysis, and interpretation
+- Mix of literal and inferential questions
+- Sentences should be clear and well-structured (15-25 words)
+- Multiple choice: Options require careful reading and understanding
+- Focus on main ideas, supporting details, and basic literary analysis
+- Example: "What is the main argument presented in this passage?"
+- Suitable for grade 10 or students who need reinforcement''';
+
+      case 'intermediate':
+      case 'hard':
+        return '''
+HIGH SCHOOL - HARD DIFFICULTY:
+- Advanced vocabulary (3000-4000 words)
+- Questions require deep analysis, synthesis, and evaluation
+- Complex inferential and evaluative questions
+- Sophisticated sentence structures (20-35 words)
+- Multiple choice: Nuanced options testing critical thinking
+- Analyze rhetorical strategies, complex themes, and textual relationships
+- Example: "Evaluate the effectiveness of the author's use of..."
+- Suitable for grade 11 or advanced students''';
+
+      case 'advanced':
+      case 'very hard':
+        return '''
+HIGH SCHOOL - VERY HARD DIFFICULTY:
+- College-prep vocabulary (4000+ words)
+- Questions demand critical analysis, synthesis across texts, and evaluation
+- Highly complex analytical and evaluative questions
+- Advanced academic writing style (25-40 words)
+- Multiple choice: Sophisticated options requiring expert-level analysis
+- Analyze implicit arguments, multiple perspectives, and rhetorical complexity
+- Compare and contrast themes across different sections
+- Example: "Synthesize the author's implicit assumptions about..."
+- Suitable for grade 12, AP level, or college-prep students''';
+
+      default:
+        return '''
+HIGH SCHOOL LEVEL:
+- Advanced vocabulary and complex sentence structures
+- Questions require analysis, synthesis, and evaluation
+- Mix of comprehension and critical thinking questions''';
+    }
   }
 }

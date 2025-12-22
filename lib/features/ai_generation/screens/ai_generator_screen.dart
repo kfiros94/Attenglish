@@ -1191,37 +1191,80 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                         child: Text(grade),
                       ))
                   .toList(),
-              onChanged: (value) => setState(() => _selectedGrade = value!),
+              onChanged: (value) {
+                setState(() {
+                  _selectedGrade = value!;
+                  // Auto-set difficulty for grades 1-9 (grade-based)
+                  // For grades 10-12, keep current selection
+                  final gradeNum = int.tryParse(value.replaceAll(RegExp(r'\D'), ''));
+                  if (gradeNum != null && gradeNum >= 1 && gradeNum <= 9) {
+                    // For grades 1-9, difficulty is ignored (grade determines difficulty)
+                    // Set to 'beginner' as placeholder, won't be used in AI prompt
+                    _selectedDifficulty = 'beginner';
+                  }
+                });
+              },
             ),
 
             const SizedBox(height: 16),
 
-            // Difficulty Level
-            Text(
-              'Difficulty',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 8),
-            SegmentedButton<String>(
-              selected: {_selectedDifficulty},
-              segments: const [
-                ButtonSegment(
-                  value: 'beginner',
-                  label: Text('Beginner'),
+            // Difficulty Level - Only show for grades 10-12
+            if (_isHighSchoolGrade())
+              ...[
+                Text(
+                  'Difficulty Level',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-                ButtonSegment(
-                  value: 'intermediate',
-                  label: Text('Intermediate'),
+                const SizedBox(height: 8),
+                SegmentedButton<String>(
+                  selected: {_selectedDifficulty},
+                  segments: const [
+                    ButtonSegment(
+                      value: 'beginner',
+                      label: Text('Normal'),
+                    ),
+                    ButtonSegment(
+                      value: 'intermediate',
+                      label: Text('Hard'),
+                    ),
+                    ButtonSegment(
+                      value: 'advanced',
+                      label: Text('Very Hard'),
+                    ),
+                  ],
+                  onSelectionChanged: (Set<String> selected) {
+                    setState(() => _selectedDifficulty = selected.first);
+                  },
                 ),
-                ButtonSegment(
-                  value: 'advanced',
-                  label: Text('Advanced'),
+                const SizedBox(height: 16),
+              ]
+            else
+              ...[
+                // Show info message for grades 1-9
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Difficulty automatically matches $_selectedGrade grade level',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.blue[700],
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 16),
               ],
-              onSelectionChanged: (Set<String> selected) {
-                setState(() => _selectedDifficulty = selected.first);
-              },
-            ),
 
             const SizedBox(height: 16),
 
@@ -1361,5 +1404,12 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
         ),
       ),
     );
+  }
+
+  /// Checks if the currently selected grade is high school (10-12)
+  /// Returns true for grades 10-12, false for grades 1-9
+  bool _isHighSchoolGrade() {
+    final gradeNum = int.tryParse(_selectedGrade.replaceAll(RegExp(r'\D'), ''));
+    return gradeNum != null && gradeNum >= 10;
   }
 }
