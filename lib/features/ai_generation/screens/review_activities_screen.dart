@@ -140,6 +140,397 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
     );
   }
 
+  /// Edits an activity at the given index
+  Future<void> _editActivity(int index) async {
+    final activity = _activities[index];
+
+    // Show different edit dialog based on activity type
+    ActivityModel? editedActivity;
+
+    switch (activity.type) {
+      case 'multiple_choice':
+        editedActivity = await _showEditMultipleChoiceDialog(activity);
+        break;
+      case 'fill_blank':
+        editedActivity = await _showEditFillBlankDialog(activity);
+        break;
+      case 'true_false':
+        editedActivity = await _showEditTrueFalseDialog(activity);
+        break;
+      case 'drag_drop':
+        editedActivity = await _showEditDragDropDialog(activity);
+        break;
+    }
+
+    // Update activity if edited
+    if (editedActivity != null) {
+      setState(() {
+        _activities[index] = editedActivity!;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Activity updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  /// Shows edit dialog for multiple choice activity
+  Future<ActivityModel?> _showEditMultipleChoiceDialog(ActivityModel activity) async {
+    final questionController = TextEditingController(text: activity.question);
+    final option1Controller = TextEditingController(text: activity.options?[0]);
+    final option2Controller = TextEditingController(text: activity.options?[1]);
+    final option3Controller = TextEditingController(text: activity.options?[2]);
+    final option4Controller = TextEditingController(text: activity.options?[3]);
+    int correctAnswerIndex = activity.correctAnswerIndex ?? 0;
+    final pointsController = TextEditingController(text: activity.points.toString());
+
+    return showDialog<ActivityModel>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Edit Multiple Choice'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: questionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Question',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+                ...List.generate(4, (i) {
+                  final controllers = [option1Controller, option2Controller, option3Controller, option4Controller];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Radio<int>(
+                          value: i,
+                          groupValue: correctAnswerIndex,
+                          onChanged: (value) {
+                            setState(() {
+                              correctAnswerIndex = value!;
+                            });
+                          },
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: controllers[i],
+                            decoration: InputDecoration(
+                              labelText: 'Option ${i + 1}',
+                              border: const OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: pointsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Points',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final edited = activity.copyWith(
+                  question: questionController.text,
+                  options: [
+                    option1Controller.text,
+                    option2Controller.text,
+                    option3Controller.text,
+                    option4Controller.text,
+                  ],
+                  correctAnswerIndex: correctAnswerIndex,
+                  points: int.tryParse(pointsController.text) ?? activity.points,
+                );
+                Navigator.pop(context, edited);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Shows edit dialog for fill in the blank activity
+  Future<ActivityModel?> _showEditFillBlankDialog(ActivityModel activity) async {
+    final questionController = TextEditingController(text: activity.question);
+    final blankSentenceController = TextEditingController(
+      text: activity.blankSentence ?? activity.question,
+    );
+    final correctWordController = TextEditingController(
+      text: activity.correctWord,
+    );
+    final pointsController = TextEditingController(text: activity.points.toString());
+
+    return showDialog<ActivityModel>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Fill in the Blank'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: questionController,
+                decoration: const InputDecoration(
+                  labelText: 'Question',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: blankSentenceController,
+                decoration: const InputDecoration(
+                  labelText: 'Sentence with blank (use ___ for blank)',
+                  border: OutlineInputBorder(),
+                  helperText: 'Example: The cat is ___ the mat',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: correctWordController,
+                decoration: const InputDecoration(
+                  labelText: 'Correct Answer',
+                  border: OutlineInputBorder(),
+                  helperText: 'Example: on',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: pointsController,
+                decoration: const InputDecoration(
+                  labelText: 'Points',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final edited = activity.copyWith(
+                question: questionController.text,
+                blankSentence: blankSentenceController.text,
+                correctWord: correctWordController.text,
+                points: int.tryParse(pointsController.text) ?? activity.points,
+              );
+              Navigator.pop(context, edited);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shows edit dialog for true/false activity
+  Future<ActivityModel?> _showEditTrueFalseDialog(ActivityModel activity) async {
+    final questionController = TextEditingController(text: activity.question);
+    final pointsController = TextEditingController(text: activity.points.toString());
+    bool correctAnswer = activity.correctAnswer ?? true;
+
+    return showDialog<ActivityModel>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Edit True/False'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: questionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Question',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                const Text('Correct Answer:', style: TextStyle(fontWeight: FontWeight.bold)),
+                RadioListTile<bool>(
+                  title: const Text('True'),
+                  value: true,
+                  groupValue: correctAnswer,
+                  onChanged: (value) {
+                    setState(() {
+                      correctAnswer = value!;
+                    });
+                  },
+                ),
+                RadioListTile<bool>(
+                  title: const Text('False'),
+                  value: false,
+                  groupValue: correctAnswer,
+                  onChanged: (value) {
+                    setState(() {
+                      correctAnswer = value!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: pointsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Points',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final edited = activity.copyWith(
+                  question: questionController.text,
+                  correctAnswer: correctAnswer,
+                  points: int.tryParse(pointsController.text) ?? activity.points,
+                );
+                Navigator.pop(context, edited);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Shows edit dialog for drag & drop activity
+  Future<ActivityModel?> _showEditDragDropDialog(ActivityModel activity) async {
+    final questionController = TextEditingController(text: activity.question);
+    final leftItemsController = TextEditingController(
+      text: activity.leftItems?.join('\n'),
+    );
+    final rightItemsController = TextEditingController(
+      text: activity.rightItems?.join('\n'),
+    );
+    final pointsController = TextEditingController(text: activity.points.toString());
+
+    return showDialog<ActivityModel>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Drag & Drop'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: questionController,
+                decoration: const InputDecoration(
+                  labelText: 'Question',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: leftItemsController,
+                decoration: const InputDecoration(
+                  labelText: 'Left Items (one per line)',
+                  border: OutlineInputBorder(),
+                  helperText: 'Example:\nDog\nCat\nBird',
+                ),
+                maxLines: 4,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: rightItemsController,
+                decoration: const InputDecoration(
+                  labelText: 'Right Items (one per line, matching order)',
+                  border: OutlineInputBorder(),
+                  helperText: 'Example:\nBarks\nMeows\nChirps',
+                ),
+                maxLines: 4,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: pointsController,
+                decoration: const InputDecoration(
+                  labelText: 'Points',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final leftItems = leftItemsController.text
+                  .split('\n')
+                  .map((s) => s.trim())
+                  .where((s) => s.isNotEmpty)
+                  .toList();
+              final rightItems = rightItemsController.text
+                  .split('\n')
+                  .map((s) => s.trim())
+                  .where((s) => s.isNotEmpty)
+                  .toList();
+
+              // Create correct pairs mapping ("0"->"0", "1"->"1", "2"->"2", etc.)
+              final correctPairs = <String, String>{};
+              for (int i = 0; i < leftItems.length && i < rightItems.length; i++) {
+                correctPairs[i.toString()] = i.toString();
+              }
+
+              final edited = activity.copyWith(
+                question: questionController.text,
+                leftItems: leftItems,
+                rightItems: rightItems,
+                correctPairs: correctPairs,
+                points: int.tryParse(pointsController.text) ?? activity.points,
+              );
+              Navigator.pop(context, edited);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Adds selected activities to lesson
   void _onAddToLesson() {
     // Get selected activities
@@ -728,14 +1119,7 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
           isSelected: _selectedActivities[actualIndex],
           index: filteredIndex,
           onToggleSelect: () => _toggleSelection(actualIndex),
-          onEdit: () {
-            // TODO: Implement edit functionality
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Edit functionality coming soon'),
-              ),
-            );
-          },
+          onEdit: () => _editActivity(actualIndex),
           onDelete: () {
             setState(() {
               _activities.removeAt(actualIndex);
