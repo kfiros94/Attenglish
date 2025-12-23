@@ -41,6 +41,10 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
   // Current filter type
   String _filterType = 'all';
 
+  // Controllers for editable lesson metadata
+  late TextEditingController _lessonNameController;
+  late TextEditingController _lessonDescriptionController;
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +54,17 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
 
     // Initialize all as selected
     _selectedActivities = List.filled(_activities.length, true);
+
+    // Initialize lesson metadata controllers with AI suggestions
+    _lessonNameController = TextEditingController(text: widget.response.lessonName);
+    _lessonDescriptionController = TextEditingController(text: widget.response.lessonDescription);
+  }
+
+  @override
+  void dispose() {
+    _lessonNameController.dispose();
+    _lessonDescriptionController.dispose();
+    super.dispose();
   }
 
   /// Returns filtered activities based on current filter
@@ -683,16 +698,13 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
       return;
     }
 
-    // Controllers for dialog
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
+    // Controllers for dialog - use edited values from summary card
+    final titleController = TextEditingController(text: _lessonNameController.text.trim());
+    final descriptionController = TextEditingController(text: _lessonDescriptionController.text.trim());
     ClassModel? selectedClass = classes.first;
     String selectedStatus = 'draft';
     int selectedGrade = 3;
     int selectedDifficulty = 2;
-
-    // Suggest a default title based on source text
-    titleController.text = 'AI Generated Lesson';
 
     await showDialog(
       context: context,
@@ -1044,14 +1056,46 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Generated ${_activities.length} activities in ${widget.response.generationTime.inSeconds}s',
+            // AI-suggested lesson name (editable)
+            TextField(
+              controller: _lessonNameController,
+              decoration: const InputDecoration(
+                labelText: 'Lesson Name',
+                hintText: 'Enter lesson name',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.school),
+              ),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
+            const SizedBox(height: 12),
+
+            // AI-suggested lesson description (editable)
+            TextField(
+              controller: _lessonDescriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Lesson Description',
+                hintText: 'Enter lesson description',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.description),
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 16),
+
+            // Generation info
+            Text(
+              'Generated ${_activities.length} activities in ${widget.response.generationTime.inSeconds}s',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
             const SizedBox(height: 8),
+
+            // Activity type breakdown
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -1079,6 +1123,8 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
               ],
             ),
             const SizedBox(height: 8),
+
+            // Summary from AI
             Text(
               widget.response.summary,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

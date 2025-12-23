@@ -109,6 +109,12 @@ class AiGenerationResponse {
   /// Extracted vocabulary words with definitions
   final List<VocabularyItem> vocabulary;
 
+  /// Suggested lesson name
+  final String lessonName;
+
+  /// Suggested lesson description
+  final String lessonDescription;
+
   /// Brief summary of what students will learn
   final String summary;
 
@@ -128,6 +134,8 @@ class AiGenerationResponse {
   const AiGenerationResponse({
     required this.activities,
     required this.vocabulary,
+    required this.lessonName,
+    required this.lessonDescription,
     required this.summary,
     required this.totalActivities,
     required this.generationTime,
@@ -174,7 +182,9 @@ class AiGenerationResponse {
             VocabularyItem.fromJson(vocabJson as Map<String, dynamic>))
         .toList();
 
-    // Extract summary
+    // Extract lesson metadata
+    final lessonName = json['lessonName'] as String? ?? json['lesson_name'] as String? ?? 'Untitled Lesson';
+    final lessonDescription = json['lessonDescription'] as String? ?? json['lesson_description'] as String? ?? '';
     final summary = json['summary'] as String? ?? '';
 
     // Create metadata
@@ -187,6 +197,8 @@ class AiGenerationResponse {
     return AiGenerationResponse(
       activities: activities,
       vocabulary: vocabulary,
+      lessonName: lessonName,
+      lessonDescription: lessonDescription,
       summary: summary,
       totalActivities: activities.length,
       generationTime: generationTime,
@@ -202,6 +214,8 @@ class AiGenerationResponse {
     return {
       'activities': activities.map((a) => a.toJson()).toList(),
       'vocabulary': vocabulary.map((v) => v.toJson()).toList(),
+      'lessonName': lessonName,
+      'lessonDescription': lessonDescription,
       'summary': summary,
       'totalActivities': totalActivities,
       'generationTime': generationTime.inMilliseconds,

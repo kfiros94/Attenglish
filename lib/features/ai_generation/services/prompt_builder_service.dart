@@ -161,6 +161,8 @@ OUTPUT FORMAT (CRITICAL):
 Respond with ONLY valid JSON. No markdown, no code blocks, no explanations.
 
 {
+  "lessonName": "Short, engaging lesson title (3-5 words)",
+  "lessonDescription": "Brief description of what students will learn (1-2 sentences)",
   "activities": [
     {
       "type": "multiple_choice",

@@ -132,7 +132,13 @@ class ClaudeAiService {
               .toList() ??
           [];
 
-      // 7. Extract summary
+      // 7. Extract lesson metadata
+      final lessonName = response['lessonName'] as String? ??
+          response['lesson_name'] as String? ??
+          'AI Generated Lesson';
+      final lessonDescription = response['lessonDescription'] as String? ??
+          response['lesson_description'] as String? ??
+          '';
       final summary = response['summary'] as String? ??
           'Generated ${activities.length} activities for ${config.gradeLevel} grade.';
 
@@ -154,6 +160,8 @@ class ClaudeAiService {
       return AiGenerationResponse(
         activities: activities,
         vocabulary: vocabulary,
+        lessonName: lessonName,
+        lessonDescription: lessonDescription,
         summary: summary,
         totalActivities: activities.length,
         generationTime: generationTime,
