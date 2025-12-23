@@ -994,7 +994,7 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
                   }
                 }
               },
-              child: const Text('Save Lesson'),
+              child: Text(selectedStatus == 'published' ? 'Publish' : 'Save as Draft'),
             ),
           ],
         ),
