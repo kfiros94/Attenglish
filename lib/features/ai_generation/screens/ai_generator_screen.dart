@@ -41,7 +41,8 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   // Generation configuration
   String _selectedGrade = '3rd';
   String _selectedDifficulty = 'beginner';
-  int _mcCount = 5; // Multiple choice count
+  int _mcCount = 5; // Multiple choice count (single answer)
+  int _maCount = 0; // Multiple answer count (checkboxes)
   int _fbCount = 3; // Fill blank count
   int _tfCount = 3; // True/false count
   int _ddCount = 2; // Drag & drop count
@@ -116,6 +117,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       gradeLevel: _selectedGrade,
       difficulty: _selectedDifficulty,
       multipleChoiceCount: _mcCount,
+      multipleAnswerCount: _maCount,
       fillBlankCount: _fbCount,
       trueFalseCount: _tfCount,
       dragDropCount: _ddCount,
@@ -585,6 +587,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       gradeLevel: _selectedGrade,
       difficulty: _selectedDifficulty,
       multipleChoiceCount: _mcCount,
+      multipleAnswerCount: _maCount,
       fillBlankCount: _fbCount,
       trueFalseCount: _tfCount,
       dragDropCount: _ddCount,
@@ -1278,7 +1281,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
               children: [
                 Expanded(
                   child: _buildCountSelector(
-                    'Multiple Choice',
+                    'Single Answer',
                     _mcCount,
                     (val) => setState(() => _mcCount = val),
                   ),
@@ -1286,9 +1289,9 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: _buildCountSelector(
-                    'Fill Blank',
-                    _fbCount,
-                    (val) => setState(() => _fbCount = val),
+                    'Multiple Answers',
+                    _maCount,
+                    (val) => setState(() => _maCount = val),
                   ),
                 ),
               ],
@@ -1298,12 +1301,24 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
               children: [
                 Expanded(
                   child: _buildCountSelector(
+                    'Fill Blank',
+                    _fbCount,
+                    (val) => setState(() => _fbCount = val),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildCountSelector(
                     'True/False',
                     _tfCount,
                     (val) => setState(() => _tfCount = val),
                   ),
                 ),
-                const SizedBox(width: 8),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
                 Expanded(
                   child: _buildCountSelector(
                     'Drag & Drop',
@@ -1311,6 +1326,8 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                     (val) => setState(() => _ddCount = val),
                   ),
                 ),
+                const SizedBox(width: 8),
+                const Expanded(child: SizedBox()), // Empty space for alignment
               ],
             ),
 
@@ -1340,7 +1357,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    '${_mcCount + _fbCount + _tfCount + _ddCount}',
+                    '${_mcCount + _maCount + _fbCount + _tfCount + _ddCount}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

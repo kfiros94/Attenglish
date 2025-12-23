@@ -99,7 +99,10 @@ Future<void> testAiGeneration() async {
       // Show type-specific details
       if (activity.type == 'multiple_choice' && activity.options != null) {
         for (int j = 0; j < activity.options!.length; j++) {
-          final marker = j == activity.correctAnswerIndex ? '✓' : ' ';
+          final isCorrect = activity.correctAnswerIndices != null
+              ? activity.correctAnswerIndices!.contains(j)
+              : j == activity.correctAnswerIndex;
+          final marker = isCorrect ? '✓' : ' ';
           print('   $marker ${String.fromCharCode(65 + j)}. ${activity.options![j]}');
         }
       } else if (activity.type == 'fill_blank') {

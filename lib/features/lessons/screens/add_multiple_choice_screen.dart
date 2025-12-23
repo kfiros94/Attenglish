@@ -21,6 +21,8 @@ class _AddMultipleChoiceScreenState extends State<AddMultipleChoiceScreen> {
   final _pointsController = TextEditingController(text: '10');
 
   int? _correctAnswerIndex;
+  Set<int> _correctAnswerIndices = {};
+  bool _isMultipleAnswers = false;
 
   @override
   void dispose() {
@@ -40,14 +42,26 @@ class _AddMultipleChoiceScreenState extends State<AddMultipleChoiceScreen> {
     }
 
     // Check correct answer selected
-    if (_correctAnswerIndex == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select the correct answer'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+    if (_isMultipleAnswers) {
+      if (_correctAnswerIndices.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select at least one correct answer'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    } else {
+      if (_correctAnswerIndex == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select the correct answer'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
     }
 
     // Create ActivityModel
@@ -61,7 +75,8 @@ class _AddMultipleChoiceScreenState extends State<AddMultipleChoiceScreen> {
         _option3Controller.text.trim(),
         _option4Controller.text.trim(),
       ],
-      correctAnswerIndex: _correctAnswerIndex,
+      correctAnswerIndex: _isMultipleAnswers ? null : _correctAnswerIndex,
+      correctAnswerIndices: _isMultipleAnswers ? (_correctAnswerIndices.toList()..sort()) : null,
       points: int.parse(_pointsController.text),
     );
 
@@ -200,6 +215,26 @@ class _AddMultipleChoiceScreenState extends State<AddMultipleChoiceScreen> {
               ),
               const SizedBox(height: 24),
 
+              // Multiple answers toggle
+              SwitchListTile(
+                title: const Text('Multiple Correct Answers'),
+                subtitle: const Text('Allow more than one correct answer'),
+                value: _isMultipleAnswers,
+                onChanged: (value) {
+                  setState(() {
+                    _isMultipleAnswers = value;
+                    if (_isMultipleAnswers && _correctAnswerIndex != null) {
+                      // Convert single answer to multiple
+                      _correctAnswerIndices = {_correctAnswerIndex!};
+                    } else if (!_isMultipleAnswers && _correctAnswerIndices.isNotEmpty) {
+                      // Convert multiple to single
+                      _correctAnswerIndex = _correctAnswerIndices.first;
+                    }
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+
               // Correct Answer Selection
               Text(
                 'Correct Answer *',
@@ -208,70 +243,131 @@ class _AddMultipleChoiceScreenState extends State<AddMultipleChoiceScreen> {
                     ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Select which option is the correct answer',
-                style: TextStyle(
+              Text(
+                _isMultipleAnswers
+                    ? 'Select all correct answers'
+                    : 'Select which option is the correct answer',
+                style: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
                 ),
               ),
               const SizedBox(height: 12),
 
-              // Radio Options
+              // Option 1
               Card(
                 color: Colors.blue.shade50,
-                child: RadioListTile<int>(
-                  title: const Text('Option 1'),
-                  value: 0,
-                  groupValue: _correctAnswerIndex,
-                  onChanged: (value) {
-                    setState(() {
-                      _correctAnswerIndex = value;
-                    });
-                  },
-                ),
+                child: _isMultipleAnswers
+                    ? CheckboxListTile(
+                        title: const Text('Option 1'),
+                        value: _correctAnswerIndices.contains(0),
+                        onChanged: (value) {
+                          setState(() {
+                            if (value == true) {
+                              _correctAnswerIndices.add(0);
+                            } else {
+                              _correctAnswerIndices.remove(0);
+                            }
+                          });
+                        },
+                      )
+                    : RadioListTile<int>(
+                        title: const Text('Option 1'),
+                        value: 0,
+                        groupValue: _correctAnswerIndex,
+                        onChanged: (value) {
+                          setState(() {
+                            _correctAnswerIndex = value;
+                          });
+                        },
+                      ),
               ),
               const SizedBox(height: 8),
 
+              // Option 2
               Card(
-                  color: Colors.blue.shade50,
-                  child: RadioListTile<int>(
-                    title: const Text('Option 2'),
-                  value: 1,
-                  groupValue: _correctAnswerIndex,
-                  onChanged: (value) {
-                    setState(() {
-                      _correctAnswerIndex = value;
-                    });
-                  },
-                  ),
+                color: Colors.blue.shade50,
+                child: _isMultipleAnswers
+                    ? CheckboxListTile(
+                        title: const Text('Option 2'),
+                        value: _correctAnswerIndices.contains(1),
+                        onChanged: (value) {
+                          setState(() {
+                            if (value == true) {
+                              _correctAnswerIndices.add(1);
+                            } else {
+                              _correctAnswerIndices.remove(1);
+                            }
+                          });
+                        },
+                      )
+                    : RadioListTile<int>(
+                        title: const Text('Option 2'),
+                        value: 1,
+                        groupValue: _correctAnswerIndex,
+                        onChanged: (value) {
+                          setState(() {
+                            _correctAnswerIndex = value;
+                          });
+                        },
+                      ),
               ),
               const SizedBox(height: 8),
 
+              // Option 3
               Card(
-                  color: Colors.blue.shade50,
-                  child: RadioListTile<int>(
-                    title: const Text('Option 3'),
-                  value: 2,
-                  groupValue: _correctAnswerIndex,
-                  onChanged: (value) {
-                    setState(() {
-                      _correctAnswerIndex = value;
-                    });
-                  },
-                  ),
+                color: Colors.blue.shade50,
+                child: _isMultipleAnswers
+                    ? CheckboxListTile(
+                        title: const Text('Option 3'),
+                        value: _correctAnswerIndices.contains(2),
+                        onChanged: (value) {
+                          setState(() {
+                            if (value == true) {
+                              _correctAnswerIndices.add(2);
+                            } else {
+                              _correctAnswerIndices.remove(2);
+                            }
+                          });
+                        },
+                      )
+                    : RadioListTile<int>(
+                        title: const Text('Option 3'),
+                        value: 2,
+                        groupValue: _correctAnswerIndex,
+                        onChanged: (value) {
+                          setState(() {
+                            _correctAnswerIndex = value;
+                          });
+                        },
+                      ),
               ),
               const SizedBox(height: 8),
 
+              // Option 4
               Card(
-                  color: Colors.blue.shade50,
-                  child: RadioListTile<int>(
-                    title: const Text('Option 4'),
-                  value: 3,
-                  groupValue: _correctAnswerIndex,
-                  onChanged: (value) {
-                    setState(() {
-                      _correctAnswerIndex = value;
+                color: Colors.blue.shade50,
+                child: _isMultipleAnswers
+                    ? CheckboxListTile(
+                        title: const Text('Option 4'),
+                        value: _correctAnswerIndices.contains(3),
+                        onChanged: (value) {
+                          setState(() {
+                            if (value == true) {
+                              _correctAnswerIndices.add(3);
+                            } else {
+                              _correctAnswerIndices.remove(3);
+                            }
+                          });
+                        },
+                      )
+                    : RadioListTile<int>(
+                        title: const Text('Option 4'),
+                        value: 3,
+                        groupValue: _correctAnswerIndex,
+                        onChanged: (value) {
+                          setState(() {
+                            _correctAnswerIndex = value;
                     });
                   },
                   ),

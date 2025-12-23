@@ -8,7 +8,8 @@ class ActivityModel {
 
   // For multiple choice (4 options):
   final List<String>? options; // ["Red", "Blue", "Green", "Yellow"]
-  final int? correctAnswerIndex; // 0-3 (which option is correct)
+  final int? correctAnswerIndex; // 0-3 (which option is correct) - single answer
+  final List<int>? correctAnswerIndices; // [0, 2] (multiple correct answers)
 
   // For fill in blank:
   final String? blankSentence; // "The cat is _____ the table"
@@ -31,6 +32,7 @@ class ActivityModel {
     this.instructions,
     this.options,
     this.correctAnswerIndex,
+    this.correctAnswerIndices,
     this.blankSentence,
     this.correctWord,
     this.leftItems,
@@ -51,6 +53,9 @@ class ActivityModel {
           ?.map((e) => e as String)
           .toList(),
       correctAnswerIndex: json['correctAnswerIndex'] as int?,
+      correctAnswerIndices: (json['correctAnswerIndices'] as List<dynamic>?)
+          ?.map((e) => e as int)
+          .toList(),
       blankSentence: json['blankSentence'] as String?,
       correctWord: json['correctWord'] as String?,
       leftItems: (json['leftItems'] as List<dynamic>?)
@@ -76,6 +81,7 @@ class ActivityModel {
       if (instructions != null) 'instructions': instructions,
       if (options != null) 'options': options,
       if (correctAnswerIndex != null) 'correctAnswerIndex': correctAnswerIndex,
+      if (correctAnswerIndices != null) 'correctAnswerIndices': correctAnswerIndices,
       if (blankSentence != null) 'blankSentence': blankSentence,
       if (correctWord != null) 'correctWord': correctWord,
       if (leftItems != null) 'leftItems': leftItems,
@@ -94,6 +100,7 @@ class ActivityModel {
     String? instructions,
     List<String>? options,
     int? correctAnswerIndex,
+    List<int>? correctAnswerIndices,
     String? blankSentence,
     String? correctWord,
     List<String>? leftItems,
@@ -109,6 +116,7 @@ class ActivityModel {
       instructions: instructions ?? this.instructions,
       options: options ?? this.options,
       correctAnswerIndex: correctAnswerIndex ?? this.correctAnswerIndex,
+      correctAnswerIndices: correctAnswerIndices ?? this.correctAnswerIndices,
       blankSentence: blankSentence ?? this.blankSentence,
       correctWord: correctWord ?? this.correctWord,
       leftItems: leftItems ?? this.leftItems,

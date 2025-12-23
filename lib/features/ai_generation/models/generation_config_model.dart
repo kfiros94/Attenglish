@@ -10,8 +10,11 @@ class GenerationConfig {
   /// Difficulty level: "beginner", "intermediate", or "advanced"
   final String difficulty;
 
-  /// Number of multiple choice questions to generate
+  /// Number of multiple choice questions to generate (single answer)
   final int multipleChoiceCount;
+
+  /// Number of multiple answer questions to generate (checkboxes)
+  final int multipleAnswerCount;
 
   /// Number of fill in the blank activities to generate
   final int fillBlankCount;
@@ -69,6 +72,7 @@ class GenerationConfig {
     required this.gradeLevel,
     required this.difficulty,
     this.multipleChoiceCount = 5,
+    this.multipleAnswerCount = 0,
     this.fillBlankCount = 3,
     this.trueFalseCount = 3,
     this.dragDropCount = 2,
@@ -80,6 +84,7 @@ class GenerationConfig {
   /// Total number of activities to generate
   int get totalActivities =>
       multipleChoiceCount +
+      multipleAnswerCount +
       fillBlankCount +
       trueFalseCount +
       dragDropCount;
@@ -116,6 +121,12 @@ class GenerationConfig {
     if (multipleChoiceCount < 0) {
       throw ArgumentError(
         'Multiple choice count must be >= 0, got: $multipleChoiceCount',
+      );
+    }
+
+    if (multipleAnswerCount < 0) {
+      throw ArgumentError(
+        'Multiple answer count must be >= 0, got: $multipleAnswerCount',
       );
     }
 
@@ -158,6 +169,7 @@ class GenerationConfig {
       'difficulty': difficulty,
       'activityCounts': {
         'multipleChoice': multipleChoiceCount,
+        'multipleAnswer': multipleAnswerCount,
         'fillBlank': fillBlankCount,
         'trueFalse': trueFalseCount,
         'dragDrop': dragDropCount,
@@ -193,6 +205,7 @@ class GenerationConfig {
       gradeLevel: json['gradeLevel'] as String? ?? '5th',
       difficulty: json['difficulty'] as String? ?? 'intermediate',
       multipleChoiceCount: activityCounts['multipleChoice'] as int? ?? 5,
+      multipleAnswerCount: activityCounts['multipleAnswer'] as int? ?? 0,
       fillBlankCount: activityCounts['fillBlank'] as int? ?? 3,
       trueFalseCount: activityCounts['trueFalse'] as int? ?? 3,
       dragDropCount: activityCounts['dragDrop'] as int? ?? 2,
@@ -215,6 +228,7 @@ class GenerationConfig {
     String? gradeLevel,
     String? difficulty,
     int? multipleChoiceCount,
+    int? multipleAnswerCount,
     int? fillBlankCount,
     int? trueFalseCount,
     int? dragDropCount,
@@ -226,6 +240,7 @@ class GenerationConfig {
       gradeLevel: gradeLevel ?? this.gradeLevel,
       difficulty: difficulty ?? this.difficulty,
       multipleChoiceCount: multipleChoiceCount ?? this.multipleChoiceCount,
+      multipleAnswerCount: multipleAnswerCount ?? this.multipleAnswerCount,
       fillBlankCount: fillBlankCount ?? this.fillBlankCount,
       trueFalseCount: trueFalseCount ?? this.trueFalseCount,
       dragDropCount: dragDropCount ?? this.dragDropCount,
@@ -294,6 +309,7 @@ class GenerationConfig {
         other.gradeLevel == gradeLevel &&
         other.difficulty == difficulty &&
         other.multipleChoiceCount == multipleChoiceCount &&
+        other.multipleAnswerCount == multipleAnswerCount &&
         other.fillBlankCount == fillBlankCount &&
         other.trueFalseCount == trueFalseCount &&
         other.dragDropCount == dragDropCount &&
@@ -308,6 +324,7 @@ class GenerationConfig {
       gradeLevel,
       difficulty,
       multipleChoiceCount,
+      multipleAnswerCount,
       fillBlankCount,
       trueFalseCount,
       dragDropCount,

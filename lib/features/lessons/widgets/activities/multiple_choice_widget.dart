@@ -18,40 +18,81 @@ class MultipleChoiceWidget extends StatefulWidget {
 
 class _MultipleChoiceWidgetState extends State<MultipleChoiceWidget> {
   int? _selectedIndex;
+  Set<int> _selectedIndices = {};
   bool _hasChecked = false;
   bool? _isCorrect;
 
-  void _checkAnswer() {
-    if (_selectedIndex == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select an answer'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+  bool get _isMultipleAnswers =>
+      widget.activity.correctAnswerIndices != null &&
+      widget.activity.correctAnswerIndices!.isNotEmpty;
 
-    setState(() {
-      _hasChecked = true;
-      _isCorrect = _selectedIndex == widget.activity.correctAnswerIndex;
-    });
+  void _checkAnswer() {
+    if (_isMultipleAnswers) {
+      if (_selectedIndices.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select at least one answer'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _hasChecked = true;
+        // Check if selected answers match correct answers exactly
+        final correctSet = Set<int>.from(widget.activity.correctAnswerIndices!);
+        _isCorrect = _selectedIndices.length == correctSet.length &&
+            _selectedIndices.every((index) => correctSet.contains(index));
+      });
+    } else {
+      if (_selectedIndex == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select an answer'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _hasChecked = true;
+        _isCorrect = _selectedIndex == widget.activity.correctAnswerIndex;
+      });
+    }
 
     // Notify parent
     widget.onAnswered(_isCorrect!, widget.activity.points);
   }
 
+  bool _isCorrectAnswer(int index) {
+    if (_isMultipleAnswers) {
+      return widget.activity.correctAnswerIndices!.contains(index);
+    } else {
+      return index == widget.activity.correctAnswerIndex;
+    }
+  }
+
+  bool _isSelected(int index) {
+    if (_isMultipleAnswers) {
+      return _selectedIndices.contains(index);
+    } else {
+      return _selectedIndex == index;
+    }
+  }
+
   Color _getOptionColor(int index) {
     if (!_hasChecked) {
-      return _selectedIndex == index ? Colors.blue.shade100 : Colors.white;
+      return _isSelected(index) ? Colors.blue.shade100 : Colors.white;
     }
 
     // After checking
-    if (index == widget.activity.correctAnswerIndex) {
+    if (_isCorrectAnswer(index)) {
       return Colors.green.shade100; // Correct answer is always green
     }
 
-    if (_selectedIndex == index && !_isCorrect!) {
+    if (_isSelected(index) && !_isCorrect!) {
       return Colors.red.shade100; // Wrong selected answer is red
     }
 
@@ -60,15 +101,23 @@ class _MultipleChoiceWidgetState extends State<MultipleChoiceWidget> {
 
   IconData? _getOptionIcon(int index) {
     if (!_hasChecked) {
-      return _selectedIndex == index ? Icons.radio_button_checked : Icons.radio_button_unchecked;
+      if (_isMultipleAnswers) {
+        return _selectedIndices.contains(index)
+            ? Icons.check_box
+            : Icons.check_box_outline_blank;
+      } else {
+        return _selectedIndex == index
+            ? Icons.radio_button_checked
+            : Icons.radio_button_unchecked;
+      }
     }
 
     // After checking
-    if (index == widget.activity.correctAnswerIndex) {
+    if (_isCorrectAnswer(index)) {
       return Icons.check_circle;
     }
 
-    if (_selectedIndex == index && !_isCorrect!) {
+    if (_isSelected(index) && !_isCorrect!) {
       return Icons.cancel;
     }
 
@@ -77,19 +126,30 @@ class _MultipleChoiceWidgetState extends State<MultipleChoiceWidget> {
 
   Color _getOptionIconColor(int index) {
     if (!_hasChecked) {
-      return _selectedIndex == index ? Colors.blue : Colors.grey;
+      return _isSelected(index) ? Colors.blue : Colors.grey;
     }
 
     // After checking
-    if (index == widget.activity.correctAnswerIndex) {
+    if (_isCorrectAnswer(index)) {
       return Colors.green;
     }
 
-    if (_selectedIndex == index && !_isCorrect!) {
+    if (_isSelected(index) && !_isCorrect!) {
       return Colors.red;
     }
 
     return Colors.grey;
+  }
+
+  String _getCorrectAnswerText() {
+    if (_isMultipleAnswers) {
+      final correctAnswers = widget.activity.correctAnswerIndices!
+          .map((idx) => widget.activity.options![idx])
+          .join(', ');
+      return 'The correct answers are: $correctAnswers';
+    } else {
+      return 'The correct answer is: ${widget.activity.options![widget.activity.correctAnswerIndex!]}';
+    }
   }
 
   @override
@@ -126,7 +186,17 @@ class _MultipleChoiceWidgetState extends State<MultipleChoiceWidget> {
                     ? null
                     : () {
                         setState(() {
-                          _selectedIndex = index;
+                          if (_isMultipleAnswers) {
+                            // Toggle selection for multiple answers
+                            if (_selectedIndices.contains(index)) {
+                              _selectedIndices.remove(index);
+                            } else {
+                              _selectedIndices.add(index);
+                            }
+                          } else {
+                            // Single answer selection
+                            _selectedIndex = index;
+                          }
                         });
                       },
                 borderRadius: BorderRadius.circular(12),
@@ -135,10 +205,10 @@ class _MultipleChoiceWidgetState extends State<MultipleChoiceWidget> {
                   decoration: BoxDecoration(
                     color: _getOptionColor(index),
                     border: Border.all(
-                      color: _selectedIndex == index
+                      color: _isSelected(index)
                           ? Colors.blue
                           : Colors.grey.shade300,
-                      width: _selectedIndex == index ? 2 : 1,
+                      width: _isSelected(index) ? 2 : 1,
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -203,7 +273,7 @@ class _MultipleChoiceWidgetState extends State<MultipleChoiceWidget> {
                       Text(
                         _isCorrect!
                             ? 'You earned ${widget.activity.points} points!'
-                            : 'The correct answer is: ${widget.activity.options![widget.activity.correctAnswerIndex!]}',
+                            : _getCorrectAnswerText(),
                         style: TextStyle(
                           fontSize: 14,
                           color: _isCorrect!

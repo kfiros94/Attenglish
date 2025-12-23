@@ -428,8 +428,8 @@ class ClaudeAiService {
   /// Converts a single activity JSON object to ActivityModel
   ///
   /// Handles the different fields required for each activity type:
-  /// - Multiple choice: question, options, correctAnswerIndex
-  /// - Fill blank: question, correctAnswers, caseSensitive
+  /// - Multiple choice: question, options, correctAnswerIndex OR correctAnswerIndices
+  /// - Fill blank: question, blankSentence, correctWord
   /// - True/false: question, correctAnswer
   /// - Drag & drop: question, leftItems, rightItems, correctPairs
   ///
@@ -448,12 +448,19 @@ class ClaudeAiService {
 
     switch (type) {
       case 'multiple_choice':
+        // Handle both single answer and multiple answers
+        final correctAnswerIndex = json['correctAnswerIndex'] as int?;
+        final correctAnswerIndices = json['correctAnswerIndices'] != null
+            ? List<int>.from(json['correctAnswerIndices'] as List)
+            : null;
+
         return ActivityModel(
           id: id,
           type: type,
           question: json['question'] as String,
           options: List<String>.from(json['options'] as List),
-          correctAnswerIndex: json['correctAnswerIndex'] as int,
+          correctAnswerIndex: correctAnswerIndex,
+          correctAnswerIndices: correctAnswerIndices,
           points: json['points'] as int? ?? 10,
         );
 

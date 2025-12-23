@@ -96,7 +96,8 @@ CRITICAL REQUIREMENTS FOR ADHD LEARNERS:
 - Avoid complex sentence structures
 - Use concrete examples, not abstract concepts
 - Make instructions explicit and direct
-- Ensure ONE clear correct answer per question
+- For single-answer questions: Ensure ONE clear correct answer
+- For multi-answer questions: Make it VERY clear (e.g., "Select all that apply")
 - Avoid confusing or tricky distractors
 
 SOURCE TEXT:
@@ -108,38 +109,48 @@ TASK:
 Generate ${config.totalActivities} English learning activities based ONLY on the source text above.
 
 ACTIVITY BREAKDOWN:
-1. Multiple Choice: ${config.multipleChoiceCount} questions (4 options each)
-2. Fill in the Blank: ${config.fillBlankCount} questions
-3. True/False: ${config.trueFalseCount} questions
-4. Drag & Drop (Matching): ${config.dragDropCount} questions
+1. Multiple Choice (Single Answer): ${config.multipleChoiceCount} questions (4 options each, radio buttons)
+2. Multiple Choice (Multiple Answers): ${config.multipleAnswerCount} questions (4 options each, checkboxes - students must select ALL correct answers)
+3. Fill in the Blank: ${config.fillBlankCount} questions
+4. True/False: ${config.trueFalseCount} questions
+5. Drag & Drop (Matching): ${config.dragDropCount} questions
 
 TARGET GRADE: ${config.gradeLevel}
 ${_getGradeSpecificGuidelines(config.gradeLevel, config.difficulty)}
 
 IMPORTANT RULES:
 1. ALL questions MUST be answerable from the source text - no external information
-2. For Multiple Choice:
+2. For Multiple Choice (Single Answer):
    - Provide exactly 4 options
-   - Only ONE correct answer
+   - ONLY ONE correct answer
+   - Use "correctAnswerIndex" field (0-3)
    - Make distractors plausible but clearly wrong
    - Avoid "all of the above" or "none of the above"
 
-3. For Fill in the Blank:
+3. For Multiple Choice (Multiple Answers):
+   - Provide exactly 4 options
+   - Must have 2 or 3 correct answers (NOT just 1, NOT all 4)
+   - Use "correctAnswerIndices" field (array like [0, 2])
+   - Question MUST clearly state "Select all that apply" or "Which of the following are true?"
+   - Make it clear students need to select multiple answers
+   - Make distractors plausible but clearly wrong
+
+4. For Fill in the Blank:
    - Use ___ to indicate the blank
    - The context should make the answer clear
    - Accept minor variations (plurals, tenses)
 
-4. For True/False:
+5. For True/False:
    - Statement must be clearly true or false based on text
    - No ambiguity allowed
 
-5. For Drag & Drop (Matching):
+6. For Drag & Drop (Matching):
    - Provide 3-4 items to match
    - Clear one-to-one correspondence
    - Example: Match animals to sounds, words to definitions
 
 ${config.includeVocabulary ? '''
-6. VOCABULARY EXTRACTION:
+7. VOCABULARY EXTRACTION:
    - Extract 8-10 key vocabulary words from the text
    - Provide simple definition (one sentence, grade-appropriate)
    - Include Hebrew translation
@@ -153,16 +164,23 @@ Respond with ONLY valid JSON. No markdown, no code blocks, no explanations.
   "activities": [
     {
       "type": "multiple_choice",
-      "question": "Your question here?",
-      "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+      "question": "What color is the sky?",
+      "options": ["Blue", "Red", "Green", "Yellow"],
       "correctAnswerIndex": 0,
+      "points": 10
+    },
+    {
+      "type": "multiple_choice",
+      "question": "Select all the animals mentioned in the text:",
+      "options": ["Dog", "Cat", "Bird", "Fish"],
+      "correctAnswerIndices": [0, 1],
       "points": 10
     },
     {
       "type": "fill_blank",
       "question": "The cat sat on the ___.",
-      "correctAnswers": ["mat", "floor"],
-      "caseSensitive": false,
+      "blankSentence": "The cat sat on the ___.",
+      "correctWord": "mat",
       "points": 10
     },
     {

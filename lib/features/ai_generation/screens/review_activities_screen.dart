@@ -184,8 +184,16 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
     final option2Controller = TextEditingController(text: activity.options?[1]);
     final option3Controller = TextEditingController(text: activity.options?[2]);
     final option4Controller = TextEditingController(text: activity.options?[3]);
-    int correctAnswerIndex = activity.correctAnswerIndex ?? 0;
     final pointsController = TextEditingController(text: activity.points.toString());
+
+    // Determine if this is single or multiple answer mode
+    bool isMultipleAnswers = activity.correctAnswerIndices != null && activity.correctAnswerIndices!.isNotEmpty;
+
+    // Initialize selection state
+    int correctAnswerIndex = activity.correctAnswerIndex ?? 0;
+    Set<int> selectedAnswers = activity.correctAnswerIndices != null
+        ? Set<int>.from(activity.correctAnswerIndices!)
+        : {};
 
     return showDialog<ActivityModel>(
       context: context,
@@ -205,21 +213,54 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
                   maxLines: 2,
                 ),
                 const SizedBox(height: 16),
+                // Toggle for single vs multiple answers
+                SwitchListTile(
+                  title: const Text('Multiple Correct Answers'),
+                  subtitle: const Text('Allow selecting more than one correct answer'),
+                  value: isMultipleAnswers,
+                  onChanged: (value) {
+                    setState(() {
+                      isMultipleAnswers = value;
+                      if (isMultipleAnswers && selectedAnswers.isEmpty) {
+                        // Initialize with current single answer
+                        selectedAnswers = {correctAnswerIndex};
+                      } else if (!isMultipleAnswers && selectedAnswers.isNotEmpty) {
+                        // Use first selected answer as the single answer
+                        correctAnswerIndex = selectedAnswers.first;
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
                 ...List.generate(4, (i) {
                   final controllers = [option1Controller, option2Controller, option3Controller, option4Controller];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
                       children: [
-                        Radio<int>(
-                          value: i,
-                          groupValue: correctAnswerIndex,
-                          onChanged: (value) {
-                            setState(() {
-                              correctAnswerIndex = value!;
-                            });
-                          },
-                        ),
+                        if (isMultipleAnswers)
+                          Checkbox(
+                            value: selectedAnswers.contains(i),
+                            onChanged: (value) {
+                              setState(() {
+                                if (value == true) {
+                                  selectedAnswers.add(i);
+                                } else {
+                                  selectedAnswers.remove(i);
+                                }
+                              });
+                            },
+                          )
+                        else
+                          Radio<int>(
+                            value: i,
+                            groupValue: correctAnswerIndex,
+                            onChanged: (value) {
+                              setState(() {
+                                correctAnswerIndex = value!;
+                              });
+                            },
+                          ),
                         Expanded(
                           child: TextField(
                             controller: controllers[i],
@@ -252,6 +293,17 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
             ),
             ElevatedButton(
               onPressed: () {
+                // Validate that at least one answer is selected
+                if (isMultipleAnswers && selectedAnswers.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please select at least one correct answer'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
                 final edited = activity.copyWith(
                   question: questionController.text,
                   options: [
@@ -260,7 +312,8 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
                     option3Controller.text,
                     option4Controller.text,
                   ],
-                  correctAnswerIndex: correctAnswerIndex,
+                  correctAnswerIndex: isMultipleAnswers ? null : correctAnswerIndex,
+                  correctAnswerIndices: isMultipleAnswers ? (selectedAnswers.toList()..sort()) : null,
                   points: int.tryParse(pointsController.text) ?? activity.points,
                 );
                 Navigator.pop(context, edited);
