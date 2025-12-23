@@ -1401,20 +1401,30 @@ class ActivityReviewCard extends StatelessWidget {
 
   /// Builds multiple choice activity details
   Widget _buildMultipleChoiceDetails(BuildContext context) {
+    // Check if this is a multiple-answer question
+    final hasMultipleAnswers = activity.correctAnswerIndices != null &&
+                                activity.correctAnswerIndices!.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ...activity.options!.asMap().entries.map((entry) {
           final index = entry.key;
           final option = entry.value;
-          final isCorrect = index == activity.correctAnswer;
+
+          // Determine if this option is correct
+          final isCorrect = hasMultipleAnswers
+              ? activity.correctAnswerIndices!.contains(index)
+              : index == activity.correctAnswerIndex;
 
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),
             child: Row(
               children: [
                 Icon(
-                  isCorrect ? Icons.check_circle : Icons.radio_button_unchecked,
+                  isCorrect
+                      ? (hasMultipleAnswers ? Icons.check_box : Icons.check_circle)
+                      : (hasMultipleAnswers ? Icons.check_box_outline_blank : Icons.radio_button_unchecked),
                   size: 16,
                   color: isCorrect ? Colors.green : Colors.grey,
                 ),
