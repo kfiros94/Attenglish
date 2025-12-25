@@ -401,9 +401,9 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisCount: crossAxisCount,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: AppTheme.spacingMedium,
-              crossAxisSpacing: AppTheme.spacingMedium,
-              childAspectRatio: 1.1,
+              mainAxisSpacing: AppTheme.spacingLarge,
+              crossAxisSpacing: AppTheme.spacingLarge,
+              childAspectRatio: 0.85, // Taller cards for better image display
               children: [
                 // AI Generator card (NEW)
                 DashboardCard(
