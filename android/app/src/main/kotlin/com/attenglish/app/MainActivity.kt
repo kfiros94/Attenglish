@@ -1,4 +1,4 @@
-package com.example.attenglish
+package com.attenglish.app
 
 import io.flutter.embedding.android.FlutterActivity
 
