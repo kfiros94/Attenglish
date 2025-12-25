@@ -19,7 +19,6 @@ import '../../lessons/models/lesson_model.dart';
 import '../../lessons/services/lesson_service.dart';
 import '../../lessons/screens/student_lesson_viewer.dart';
 import '../../../core/theme/adhd_theme.dart';
-import '../../ai_generation/services/test_ai_service.dart';
 import '../../ai_generation/screens/ai_generator_screen.dart';
 import '../../gamification/widgets/streak_calendar.dart';
 import '../../lessons/screens/student_all_tasks_screen.dart';
@@ -482,61 +481,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       : 'Browse available content',
                   onTap: () {
                     Navigator.of(context).pushNamed('/lessons/list');
-                  },
-                ),
-
-                // AI Test card (temporary)
-                DashboardCard(
-                  icon: Icons.psychology,
-                  iconColor: Colors.green,
-                  title: isRTL ? 'בדיקת AI' : 'Test AI Generation',
-                  description: isRTL
-                      ? 'בדוק יצירת פעילויות AI'
-                      : 'Test AI activity generation',
-                  badgeText: 'TEST',
-                  onTap: () async {
-                    // Show loading dialog
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) => const Center(
-                        child: Card(
-                          child: Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircularProgressIndicator(),
-                                SizedBox(height: 16),
-                                Text('Testing AI Generation...'),
-                                Text('Check console for results'),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-
-                    // Run test
-                    await testAiGeneration();
-
-                    // Close loading dialog
-                    if (mounted) {
-                      Navigator.of(context).pop();
-
-                      // Show success message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            isRTL
-                                ? 'הבדיקה הושלמה! בדוק את הקונסולה לתוצאות'
-                                : 'Test completed! Check console for results',
-                          ),
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
-                    }
                   },
                 ),
               ],
