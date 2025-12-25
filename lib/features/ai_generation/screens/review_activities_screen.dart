@@ -1320,6 +1320,8 @@ class ActivityReviewCard extends StatelessWidget {
         return Icons.check_circle;
       case 'drag_drop':
         return Icons.swap_horiz;
+      case 'image_description':
+        return Icons.image;
       default:
         return Icons.help_outline;
     }
@@ -1336,6 +1338,8 @@ class ActivityReviewCard extends StatelessWidget {
         return Colors.green;
       case 'drag_drop':
         return Colors.purple;
+      case 'image_description':
+        return Colors.deepPurple;
       default:
         return Colors.grey;
     }
@@ -1352,6 +1356,8 @@ class ActivityReviewCard extends StatelessWidget {
         return 'True/False';
       case 'drag_drop':
         return 'Drag & Drop';
+      case 'image_description':
+        return 'Image Description';
       default:
         return type;
     }
@@ -1440,6 +1446,8 @@ class ActivityReviewCard extends StatelessWidget {
         return _buildTrueFalseDetails(context);
       case 'drag_drop':
         return _buildDragDropDetails(context);
+      case 'image_description':
+        return _buildImageDescriptionDetails(context);
       default:
         return const SizedBox.shrink();
     }
@@ -1608,6 +1616,81 @@ class ActivityReviewCard extends StatelessWidget {
                 fontStyle: FontStyle.italic,
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds image description activity details
+  Widget _buildImageDescriptionDetails(BuildContext context) {
+    final hasImages = activity.imageUrls != null && activity.imageUrls!.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (activity.instructions != null) ...[
+            const Text(
+              'Teacher Instructions:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              activity.instructions!,
+              style: TextStyle(fontSize: 12, color: Colors.deepPurple.shade700),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (hasImages) ...[
+            Row(
+              children: [
+                Icon(Icons.check_circle, size: 16, color: Colors.green),
+                const SizedBox(width: 4),
+                Text(
+                  '${activity.imageUrls!.length} image(s) uploaded',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Icon(Icons.warning_amber, size: 16, color: Colors.orange),
+                const SizedBox(width: 4),
+                Text(
+                  'No images uploaded yet',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (activity.sampleAnswer != null) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Sample Answer:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              activity.sampleAnswer!,
+              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );

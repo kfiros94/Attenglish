@@ -11,6 +11,7 @@ import '../services/document_processor_service.dart';
 import '../services/document_storage_service.dart';
 import 'review_activities_screen.dart';
 import '../../lessons/models/activity_model.dart';
+import '../../lessons/widgets/image_upload_widget.dart';
 
 /// Screen for generating AI-powered learning activities
 ///
@@ -46,6 +47,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   int _fbCount = 3; // Fill blank count
   int _tfCount = 3; // True/false count
   int _ddCount = 2; // Drag & drop count
+  int _idCount = 0; // Image description count
   bool _includeVocabulary = true;
 
   // State management
@@ -121,6 +123,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       fillBlankCount: _fbCount,
       trueFalseCount: _tfCount,
       dragDropCount: _ddCount,
+      imageDescriptionCount: _idCount,
       includeVocabulary: _includeVocabulary,
     );
 
@@ -142,7 +145,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       final service = ClaudeAiService.withDefaultKey();
 
       // Generate activities
-      final response = await service.generateActivities(
+      var response = await service.generateActivities(
         sourceText: text,
         config: config,
       );
@@ -153,6 +156,47 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       // Close loading dialog
       if (mounted) {
         Navigator.pop(context);
+
+        // Check if there are any image description activities
+        final imageDescActivities = response.activities
+            .where((activity) => activity.type == 'image_description')
+            .toList();
+
+        // If there are image description activities, prompt teacher to upload images
+        Map<String, List<String>>? uploadedImages;
+        if (imageDescActivities.isNotEmpty) {
+          uploadedImages = await _showImageUploadDialog(imageDescActivities);
+          if (uploadedImages == null) {
+            // Teacher cancelled, don't proceed to review
+            return;
+          }
+
+          // Update activities with uploaded images
+          if (uploadedImages.isNotEmpty) {
+            final updatedActivities = response.activities.map((activity) {
+              if (activity.type == 'image_description') {
+                final images = uploadedImages![activity.id];
+                if (images != null && images.isNotEmpty) {
+                  return activity.copyWith(imageUrls: images);
+                }
+              }
+              return activity;
+            }).toList();
+
+            // Create updated response with new activities
+            response = AiGenerationResponse(
+              activities: updatedActivities,
+              vocabulary: response.vocabulary,
+              lessonName: response.lessonName,
+              lessonDescription: response.lessonDescription,
+              summary: response.summary,
+              totalActivities: response.totalActivities,
+              generationTime: response.generationTime,
+              metadata: response.metadata,
+              sourceText: response.sourceText,
+            );
+          }
+        }
 
         // Navigate to review screen
         print('=== NAVIGATING TO REVIEW SCREEN ===');
@@ -290,6 +334,164 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
         });
       }
     }
+  }
+
+  /// Shows image upload dialog for image description activities
+  ///
+  /// Returns map of activity IDs to uploaded image URLs, or null if cancelled
+  Future<Map<String, List<String>>?> _showImageUploadDialog(
+    List<ActivityModel> imageDescActivities,
+  ) async {
+    // Track which activities have images uploaded
+    final Map<String, List<String>> activityImages = {};
+
+    // Create a temp lesson ID for uploads
+    final tempLessonId = 'temp_ai_gen_${DateTime.now().millisecondsSinceEpoch}';
+
+    final result = await showDialog<Map<String, List<String>>?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.image, color: Colors.deepPurple),
+                SizedBox(width: 8),
+                Text('Upload Images for Activities'),
+              ],
+            ),
+            content: SizedBox(
+              width: 500,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'You generated ${imageDescActivities.length} image description ${imageDescActivities.length == 1 ? 'activity' : 'activities'}. Upload images now, or skip and add them later.',
+                              style: TextStyle(color: Colors.blue.shade900),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // List each image description activity
+                    ...imageDescActivities.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final activity = entry.value;
+                      final activityId = activity.id;
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.deepPurple,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Activity ${index + 1}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      activity.question,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (activity.instructions != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  activity.instructions!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              ImageUploadWidget(
+                                initialImageUrls: activityImages[activityId] ?? [],
+                                lessonId: tempLessonId,
+                                maxImages: 3,
+                                onImagesChanged: (urls) {
+                                  setState(() {
+                                    activityImages[activityId] = urls;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(null),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(activityImages),
+                child: const Text('Skip for Now'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(activityImages),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Continue'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return result;
   }
 
   /// Shows enhanced loading dialog while generating
@@ -591,6 +793,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       fillBlankCount: _fbCount,
       trueFalseCount: _tfCount,
       dragDropCount: _ddCount,
+      imageDescriptionCount: _idCount,
       includeVocabulary: _includeVocabulary,
     );
 
@@ -1327,7 +1530,13 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Expanded(child: SizedBox()), // Empty space for alignment
+                Expanded(
+                  child: _buildCountSelector(
+                    'Image Description',
+                    _idCount,
+                    (val) => setState(() => _idCount = val),
+                  ),
+                ),
               ],
             ),
 
@@ -1357,7 +1566,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    '${_mcCount + _maCount + _fbCount + _tfCount + _ddCount}',
+                    '${_mcCount + _maCount + _fbCount + _tfCount + _ddCount + _idCount}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -1379,6 +1588,9 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
     int value,
     Function(int) onChanged,
   ) {
+    // Image Description has max of 3
+    final maxValue = label == 'Image Description' ? 3 : 10;
+
     return Card(
       elevation: 1,
       child: Padding(
@@ -1411,7 +1623,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.add, size: 20),
-                  onPressed: value < 10 ? () => onChanged(value + 1) : null,
+                  onPressed: value < maxValue ? () => onChanged(value + 1) : null,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),

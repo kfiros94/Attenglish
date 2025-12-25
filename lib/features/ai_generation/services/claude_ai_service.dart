@@ -526,6 +526,19 @@ class ClaudeAiService {
           points: json['points'] as int? ?? 15,
         );
 
+      case 'image_description':
+        return ActivityModel(
+          id: id,
+          type: type,
+          question: json['question'] as String,
+          instructions: json['instructions'] as String?,
+          imageUrls: json['imageUrls'] != null
+              ? List<String>.from(json['imageUrls'] as List)
+              : null,
+          sampleAnswer: json['sampleAnswer'] as String?,
+          points: json['points'] as int? ?? 20,
+        );
+
       default:
         throw AiGenerationException('Unknown activity type: $type');
     }

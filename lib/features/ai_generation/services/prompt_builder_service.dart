@@ -114,6 +114,7 @@ ACTIVITY BREAKDOWN:
 3. Fill in the Blank: ${config.fillBlankCount} questions
 4. True/False: ${config.trueFalseCount} questions
 5. Drag & Drop (Matching): ${config.dragDropCount} questions
+6. Image Description: ${config.imageDescriptionCount} questions (teacher will add images later)
 
 TARGET GRADE: ${config.gradeLevel}
 ${_getGradeSpecificGuidelines(config.gradeLevel, config.difficulty)}
@@ -148,6 +149,16 @@ IMPORTANT RULES:
    - Provide 3-4 items to match
    - Clear one-to-one correspondence
    - Example: Match animals to sounds, words to definitions
+
+7. For Image Description:
+   - Question should describe WHAT image the teacher needs to find/upload
+   - Provide clear, specific instructions for what students should describe
+   - Include a sample answer (what a good description would include)
+   - Note: Teacher will upload the actual image later
+   - Example question: "Describe what you see in this image"
+   - Example instructions: "Upload an image showing: a park with children playing"
+   - Example sampleAnswer: "I see children playing on swings in a sunny park. There are trees and a blue sky."
+   - Points: 20 (AI will grade based on accuracy, grammar, vocabulary)
 
 ${config.includeVocabulary ? '''
 7. VOCABULARY EXTRACTION:
@@ -198,6 +209,13 @@ Respond with ONLY valid JSON. No markdown, no code blocks, no explanations.
       "rightItems": ["Bark", "Meow", "Moo"],
       "correctPairs": {"0": 0, "1": 1, "2": 2},
       "points": 15
+    },
+    {
+      "type": "image_description",
+      "question": "Describe what you see in the image in English",
+      "instructions": "Teacher: Upload an image showing children playing in a park",
+      "sampleAnswer": "I see children playing on swings in a sunny park. There are trees and a blue sky with some clouds.",
+      "points": 20
     }
   ],
   "vocabulary": [

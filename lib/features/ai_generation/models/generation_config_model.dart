@@ -25,6 +25,9 @@ class GenerationConfig {
   /// Number of drag & drop matching activities to generate
   final int dragDropCount;
 
+  /// Number of image description activities to generate
+  final int imageDescriptionCount;
+
   /// Language for activities: "english", "hebrew", or "both"
   final String language;
 
@@ -76,6 +79,7 @@ class GenerationConfig {
     this.fillBlankCount = 3,
     this.trueFalseCount = 3,
     this.dragDropCount = 2,
+    this.imageDescriptionCount = 0,
     this.language = 'english',
     this.includeVocabulary = true,
     this.adhdFriendly = true,
@@ -87,7 +91,8 @@ class GenerationConfig {
       multipleAnswerCount +
       fillBlankCount +
       trueFalseCount +
-      dragDropCount;
+      dragDropCount +
+      imageDescriptionCount;
 
   /// Validates the configuration
   ///
@@ -148,6 +153,12 @@ class GenerationConfig {
       );
     }
 
+    if (imageDescriptionCount < 0) {
+      throw ArgumentError(
+        'Image description count must be >= 0, got: $imageDescriptionCount',
+      );
+    }
+
     // Validate total activities
     if (totalActivities == 0) {
       throw ArgumentError(
@@ -173,6 +184,7 @@ class GenerationConfig {
         'fillBlank': fillBlankCount,
         'trueFalse': trueFalseCount,
         'dragDrop': dragDropCount,
+        'imageDescription': imageDescriptionCount,
       },
       'language': language,
       'includeVocabulary': includeVocabulary,
@@ -209,6 +221,7 @@ class GenerationConfig {
       fillBlankCount: activityCounts['fillBlank'] as int? ?? 3,
       trueFalseCount: activityCounts['trueFalse'] as int? ?? 3,
       dragDropCount: activityCounts['dragDrop'] as int? ?? 2,
+      imageDescriptionCount: activityCounts['imageDescription'] as int? ?? 0,
       language: json['language'] as String? ?? 'english',
       includeVocabulary: json['includeVocabulary'] as bool? ?? true,
       adhdFriendly: json['adhdFriendly'] as bool? ?? true,
@@ -232,6 +245,7 @@ class GenerationConfig {
     int? fillBlankCount,
     int? trueFalseCount,
     int? dragDropCount,
+    int? imageDescriptionCount,
     String? language,
     bool? includeVocabulary,
     bool? adhdFriendly,
@@ -244,6 +258,7 @@ class GenerationConfig {
       fillBlankCount: fillBlankCount ?? this.fillBlankCount,
       trueFalseCount: trueFalseCount ?? this.trueFalseCount,
       dragDropCount: dragDropCount ?? this.dragDropCount,
+      imageDescriptionCount: imageDescriptionCount ?? this.imageDescriptionCount,
       language: language ?? this.language,
       includeVocabulary: includeVocabulary ?? this.includeVocabulary,
       adhdFriendly: adhdFriendly ?? this.adhdFriendly,
@@ -313,6 +328,7 @@ class GenerationConfig {
         other.fillBlankCount == fillBlankCount &&
         other.trueFalseCount == trueFalseCount &&
         other.dragDropCount == dragDropCount &&
+        other.imageDescriptionCount == imageDescriptionCount &&
         other.language == language &&
         other.includeVocabulary == includeVocabulary &&
         other.adhdFriendly == adhdFriendly;
@@ -328,6 +344,7 @@ class GenerationConfig {
       fillBlankCount,
       trueFalseCount,
       dragDropCount,
+      imageDescriptionCount,
       language,
       includeVocabulary,
       adhdFriendly,
