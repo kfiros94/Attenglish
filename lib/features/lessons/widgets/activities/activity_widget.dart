@@ -3,6 +3,7 @@ import '../../models/activity_model.dart';
 import 'multiple_choice_widget.dart';
 import 'fill_blank_widget.dart';
 import 'true_false_widget.dart';
+import 'image_description_widget.dart';
 
 /// Wrapper widget that displays the correct activity widget based on type
 class ActivityWidget extends StatelessWidget {
@@ -30,6 +31,11 @@ class ActivityWidget extends StatelessWidget {
         );
       case 'true_false':
         return TrueFalseWidget(
+          activity: activity,
+          onAnswered: onAnswered,
+        );
+      case 'image_description':
+        return ImageDescriptionWidget(
           activity: activity,
           onAnswered: onAnswered,
         );

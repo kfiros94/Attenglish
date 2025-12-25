@@ -4,6 +4,7 @@ import '../widgets/activities/multiple_choice_widget.dart';
 import '../widgets/activities/fill_blank_widget.dart';
 import '../widgets/activities/true_false_widget.dart';
 import '../widgets/activities/drag_drop_widget.dart';
+import '../widgets/activities/image_description_widget.dart';
 import '../../gamification/services/gamification_service.dart';
 import '../../auth/services/auth_service.dart';
 
@@ -155,6 +156,13 @@ class _StudentActivityPlayerScreenState
       case 'true_false':
         return TrueFalseWidget(
           key: ValueKey('tf_$_currentActivityIndex'),
+          activity: activity,
+          onAnswered: _onActivityAnswered,
+        );
+
+      case 'image_description':
+        return ImageDescriptionWidget(
+          key: ValueKey('id_$_currentActivityIndex'),
           activity: activity,
           onAnswered: _onActivityAnswered,
         );

@@ -1,8 +1,8 @@
 /// Activity/Exercise model for lessons
-/// Supports multiple types: multiple choice, fill blank, drag & drop, true/false
+/// Supports multiple types: multiple choice, fill blank, drag & drop, true/false, image_description
 class ActivityModel {
   final String id;
-  final String type; // 'multiple_choice', 'fill_blank', 'true_false', 'drag_drop'
+  final String type; // 'multiple_choice', 'fill_blank', 'true_false', 'drag_drop', 'image_description'
   final String question;
   final String? instructions; // optional helper text
 
@@ -23,6 +23,10 @@ class ActivityModel {
   // For true/false:
   final bool? correctAnswer; // true or false
 
+  // For image description:
+  final List<String>? imageUrls; // Firebase Storage URLs of images (1-3 images)
+  final String? sampleAnswer; // Optional: teacher's sample description for reference
+
   final int points; // points awarded for correct answer
 
   const ActivityModel({
@@ -39,6 +43,8 @@ class ActivityModel {
     this.rightItems,
     this.correctPairs,
     this.correctAnswer,
+    this.imageUrls,
+    this.sampleAnswer,
     this.points = 10,
   });
 
@@ -68,6 +74,10 @@ class ActivityModel {
           ? Map<String, String>.from(json['correctPairs'] as Map)
           : null,
       correctAnswer: json['correctAnswer'] as bool?,
+      imageUrls: (json['imageUrls'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      sampleAnswer: json['sampleAnswer'] as String?,
       points: json['points'] as int? ?? 10,
     );
   }
@@ -88,6 +98,8 @@ class ActivityModel {
       if (rightItems != null) 'rightItems': rightItems,
       if (correctPairs != null) 'correctPairs': correctPairs,
       if (correctAnswer != null) 'correctAnswer': correctAnswer,
+      if (imageUrls != null) 'imageUrls': imageUrls,
+      if (sampleAnswer != null) 'sampleAnswer': sampleAnswer,
       'points': points,
     };
   }
@@ -107,6 +119,8 @@ class ActivityModel {
     List<String>? rightItems,
     Map<String, String>? correctPairs,
     bool? correctAnswer,
+    List<String>? imageUrls,
+    String? sampleAnswer,
     int? points,
   }) {
     return ActivityModel(
@@ -123,6 +137,8 @@ class ActivityModel {
       rightItems: rightItems ?? this.rightItems,
       correctPairs: correctPairs ?? this.correctPairs,
       correctAnswer: correctAnswer ?? this.correctAnswer,
+      imageUrls: imageUrls ?? this.imageUrls,
+      sampleAnswer: sampleAnswer ?? this.sampleAnswer,
       points: points ?? this.points,
     );
   }
@@ -138,6 +154,8 @@ class ActivityModel {
         return 'Drag & Drop';
       case 'true_false':
         return 'True/False';
+      case 'image_description':
+        return 'Image Description';
       default:
         return 'Unknown';
     }
@@ -154,6 +172,8 @@ class ActivityModel {
         return '🔄';
       case 'true_false':
         return '🎯';
+      case 'image_description':
+        return '🖼️';
       default:
         return '❓';
     }

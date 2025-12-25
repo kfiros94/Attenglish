@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/config/ai_config.dart';
 import '../../lessons/models/activity_model.dart';
 import '../models/generation_config_model.dart';
@@ -546,6 +547,94 @@ class ClaudeAiService {
   /// ```
   void dispose() {
     _client.close();
+  }
+
+  /// Evaluates a student's image description using Claude Vision API
+  ///
+  /// This method:
+  /// 1. Downloads images from Firebase Storage URLs
+  /// 2. Converts images to base64
+  /// 3. Sends images + student description + evaluation prompt to Claude
+  /// 4. Parses AI evaluation response
+  ///
+  /// Parameters:
+  /// - [imageUrls]: List of Firebase Storage URLs (1-3 images)
+  /// - [studentDescription]: The student's written description
+  /// - [evaluationPrompt]: Prompt instructing Claude how to evaluate
+  /// - [maxPoints]: Maximum points available for this activity
+  ///
+  /// Returns Map containing:
+  /// - points: int (0 to maxPoints)
+  /// - feedback: String (overall feedback)
+  /// - accuracy: String (comment on accuracy)
+  /// - grammar: String (grammar feedback with corrections)
+  /// - vocabulary: String (vocabulary assessment)
+  /// - suggestions: String (improvement suggestions)
+  ///
+  /// Throws [AiGenerationException] if:
+  /// - Images cannot be downloaded
+  /// - API request fails
+  /// - Response cannot be parsed
+  ///
+  /// Example:
+  /// ```dart
+  /// final evaluation = await service.evaluateImageDescription(
+  ///   imageUrls: ['https://...'],
+  ///   studentDescription: 'A cat is sitting on a chair',
+  ///   evaluationPrompt: promptText,
+  ///   maxPoints: 20,
+  /// );
+  /// print('Points: ${evaluation['points']}');
+  /// ```
+  Future<Map<String, dynamic>> evaluateImageDescription({
+    required List<String> imageUrls,
+    required String studentDescription,
+    required String evaluationPrompt,
+    required int maxPoints,
+  }) async {
+    try {
+      // Use Firebase Cloud Function to proxy the API call
+      // This solves CORS issues on web platforms
+      final functions = FirebaseFunctions.instance;
+
+      final result = await functions.httpsCallable('evaluateImageDescription').call({
+        'imageUrls': imageUrls,
+        'studentDescription': studentDescription,
+        'evaluationPrompt': evaluationPrompt,
+        'maxPoints': maxPoints,
+      });
+
+      // The cloud function returns the evaluation directly
+      final evaluation = Map<String, dynamic>.from(result.data as Map);
+
+      // Validate required fields
+      if (!evaluation.containsKey('points') ||
+          !evaluation.containsKey('feedback') ||
+          !evaluation.containsKey('accuracy') ||
+          !evaluation.containsKey('grammar') ||
+          !evaluation.containsKey('vocabulary') ||
+          !evaluation.containsKey('suggestions')) {
+        throw AiGenerationException(
+          'Invalid evaluation response: missing required fields',
+        );
+      }
+
+      return evaluation;
+
+    } on FirebaseFunctionsException catch (e) {
+      throw AiGenerationException(
+        'Cloud Function error: ${e.message}',
+        originalError: e,
+      );
+    } on AiGenerationException {
+      rethrow;
+    } catch (e, stackTrace) {
+      throw AiGenerationException(
+        'Failed to evaluate image description: ${e.toString()}',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 }
 

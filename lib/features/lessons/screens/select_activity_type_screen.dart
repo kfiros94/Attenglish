@@ -3,6 +3,7 @@ import '../models/activity_model.dart';
 import 'add_multiple_choice_screen.dart';
 import 'add_fill_blank_screen.dart';
 import 'add_true_false_screen.dart';
+import 'add_image_description_screen.dart';
 import 'create_drag_drop_screen.dart';
 import '../../ai_generation/screens/ai_generator_screen.dart';
 import '../../ai_generation/models/activity_result_model.dart';
@@ -88,11 +89,33 @@ class SelectActivityTypeScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
+            // Image Description Card
+            _buildActivityTypeCard(
+              context: context,
+              icon: Icons.image,
+              iconColor: Colors.purple,
+              title: 'Image Description',
+              subtitle: 'Students describe images - AI evaluates',
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddImageDescriptionScreen(),
+                  ),
+                );
+                if (result != null && result is ActivityModel) {
+                  Navigator.pop(context, result);
+                }
+              },
+            ),
+
+            const SizedBox(height: 12),
+
             // Drag & Drop Card
             _buildActivityTypeCard(
               context: context,
               icon: Icons.swap_horiz,
-              iconColor: Colors.purple,
+              iconColor: Colors.teal,
               title: 'Drag & Drop',
               subtitle: 'Match items together',
               onTap: () async {
