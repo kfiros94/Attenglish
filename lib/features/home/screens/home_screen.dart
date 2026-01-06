@@ -247,9 +247,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.spacingLarge),
-        child: _userData!.role == 'teacher'
-            ? _buildTeacherDashboard()
-            : _buildStudentView(),
+        child: _userData!.role == 'admin'
+            ? _buildAdminDashboard()
+            : _userData!.role == 'teacher'
+                ? _buildTeacherDashboard()
+                : _buildStudentView(),
       ),
     );
   }
@@ -488,6 +490,218 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ],
+    );
+  }
+
+  /// Build admin dashboard with welcome message and management options
+  Widget _buildAdminDashboard() {
+    final isRTL = LocalizationService.instance.isRTL;
+    final greeting = GreetingHelper.getGreeting(_currentLocale);
+    final userName = _userData!.userName;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Welcome section with greeting
+        Container(
+          padding: const EdgeInsets.all(AppTheme.spacingXLarge),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withOpacity(0.1),
+                AppColors.secondary.withOpacity(0.1),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.2),
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              // Admin icon
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.admin_panel_settings,
+                  size: 60,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingMedium),
+
+              // Greeting and name
+              Text(
+                '$greeting, $userName!',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppTheme.spacingSmall),
+
+              Text(
+                isRTL ? 'פאנל מנהל' : 'Admin Panel',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: AppTheme.spacingXLarge),
+
+        // Management Options
+        Text(
+          isRTL ? 'אפשרויות ניהול' : 'Management Options',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingMedium),
+
+        // Management cards grid
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth > 600 ? 2 : 1;
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: AppTheme.spacingLarge,
+              crossAxisSpacing: AppTheme.spacingLarge,
+              childAspectRatio: 1.5,
+              children: [
+                // Manage Teachers card
+                _buildManagementCard(
+                  icon: Icons.person_add,
+                  iconColor: AppColors.primary,
+                  title: isRTL ? 'ניהול מורים' : 'Manage Teachers',
+                  description: isRTL
+                      ? 'הוסף והסר מורים במערכת'
+                      : 'Add and remove teachers in the system',
+                  onTap: () {
+                    Navigator.of(context).pushNamed('/admin');
+                  },
+                ),
+
+                // Manage Students card
+                _buildManagementCard(
+                  icon: Icons.group_add,
+                  iconColor: AppColors.secondary,
+                  title: isRTL ? 'ניהול תלמידים' : 'Manage Students',
+                  description: isRTL
+                      ? 'הרשם תלמידים חדשים למערכת'
+                      : 'Sign up new students to the system',
+                  onTap: () {
+                    // TODO: Navigate to student management screen
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isRTL
+                              ? 'ניהול תלמידים בפיתוח'
+                              : 'Student management coming soon',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Build management card for admin dashboard
+  Widget _buildManagementCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(AppTheme.spacingLarge),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: iconColor.withOpacity(0.3),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: iconColor.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingMedium),
+
+              // Title
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingSmall),
+
+              // Description
+              Text(
+                description,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
