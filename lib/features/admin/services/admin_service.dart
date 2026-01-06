@@ -129,6 +129,70 @@ class AdminService {
     );
   }
 
+  /// Convenience method to create a student
+  Future<UserModel> createStudent({
+    required String email,
+    required String password,
+    required String fullName,
+    required String userName,
+    required String schoolName,
+    required String city,
+    required int grade,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('Admin must be logged in to create students');
+    }
+
+    // Verify admin status
+    final isAdminUser = await isAdmin(currentUser.uid);
+    if (!isAdminUser) {
+      throw Exception('Only admins can create student accounts');
+    }
+
+    try {
+      // Create the user account
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final newUserUid = userCredential.user!.uid;
+
+      // Create student data with gamification fields initialized
+      final userData = UserModel(
+        id: newUserUid,
+        userName: userName,
+        fullName: fullName,
+        email: email,
+        role: 'student',
+        schoolName: schoolName,
+        city: city,
+        grade: grade,
+        createdAt: DateTime.now(),
+        xpPoints: 0,
+        currentLevel: 1,
+        currentStreak: 0,
+        longestStreak: 0,
+        xpHistory: {},
+        completedLessons: [],
+      );
+
+      // Save to Firestore
+      await _firestore
+          .collection('users')
+          .doc(newUserUid)
+          .set(userData.toJson());
+
+      // Sign out newly created user
+      await _auth.signOut();
+
+      return userData;
+    } catch (e) {
+      throw Exception('Failed to create student account: $e');
+    }
+  }
+
   /// Get all teachers (admin only)
   Future<List<UserModel>> getAllTeachers(String adminUid) async {
     final isAdminUser = await isAdmin(adminUid);
@@ -181,6 +245,61 @@ class AdminService {
       // For now, we only delete from Firestore
     } catch (e) {
       throw Exception('Failed to delete teacher: $e');
+    }
+  }
+
+  /// Get all students (admin only)
+  Future<List<UserModel>> getAllStudents(String adminUid) async {
+    final isAdminUser = await isAdmin(adminUid);
+    if (!isAdminUser) {
+      throw Exception('Only admins can view all students');
+    }
+
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('role', isEqualTo: 'student')
+          .get();
+
+      return snapshot.docs
+          .map((doc) => UserModel.fromJson(doc.data()))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to load students: $e');
+    }
+  }
+
+  /// Stream of all students (admin only)
+  Stream<List<UserModel>> studentsStream(String adminUid) async* {
+    final isAdminUser = await isAdmin(adminUid);
+    if (!isAdminUser) {
+      throw Exception('Only admins can view all students');
+    }
+
+    yield* _firestore
+        .collection('users')
+        .where('role', isEqualTo: 'student')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => UserModel.fromJson(doc.data()))
+            .toList());
+  }
+
+  /// Delete student account (admin only)
+  Future<void> deleteStudent(String adminUid, String studentId) async {
+    final isAdminUser = await isAdmin(adminUid);
+    if (!isAdminUser) {
+      throw Exception('Only admins can delete students');
+    }
+
+    try {
+      // Delete from Firestore
+      await _firestore.collection('users').doc(studentId).delete();
+
+      // Note: Deleting from Firebase Auth requires Admin SDK on backend
+      // For now, we only delete from Firestore
+    } catch (e) {
+      throw Exception('Failed to delete student: $e');
     }
   }
 }

@@ -608,16 +608,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? 'הרשם תלמידים חדשים למערכת'
                       : 'Sign up new students to the system',
                   onTap: () {
-                    // TODO: Navigate to student management screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isRTL
-                              ? 'ניהול תלמידים בפיתוח'
-                              : 'Student management coming soon',
-                        ),
-                      ),
-                    );
+                    Navigator.of(context).pushNamed('/admin/students');
                   },
                 ),
               ],
