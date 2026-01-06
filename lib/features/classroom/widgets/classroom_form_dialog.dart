@@ -146,7 +146,7 @@ class _ClassroomFormDialogState extends State<ClassroomFormDialog> {
                     borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                   ),
                 ),
-                items: List.generate(6, (index) {
+                items: List.generate(12, (index) {
                   final grade = index + 1;
                   return DropdownMenuItem(
                     value: grade,
