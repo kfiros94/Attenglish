@@ -6,6 +6,8 @@ import '../../classroom/services/class_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/localization_service.dart';
+import 'student_preview_screen.dart';
+import '../widgets/teacher_student_creation_form.dart';
 
 /// Screen for teachers to assign students to their classrooms
 class StudentAssignmentScreen extends StatefulWidget {
@@ -103,6 +105,51 @@ class _StudentAssignmentScreenState extends State<StudentAssignmentScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  /// Show dialog to create new student
+  Future<void> _showCreateStudentDialog() async {
+    final isRTL = LocalizationService.instance.isRTL;
+    final result = await showTeacherStudentCreationForm(context, widget.classroom);
+
+    if (result == true && mounted) {
+      // After creating student, teacher needs to log back in
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.check_circle, color: AppColors.success),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(isRTL ? 'תלמיד נוצר בהצלחה!' : 'Student Created!'),
+              ),
+            ],
+          ),
+          content: Text(
+            isRTL
+                ? 'התלמיד נוצר ונוסף לכיתה בהצלחה. אנא התחבר שוב כדי להמשיך.'
+                : 'The student has been created and added to the classroom. Please log in again to continue.',
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                // Sign out and go to login
+                await AuthService.instance.signOut();
+                if (mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/login',
+                    (route) => false,
+                  );
+                }
+              },
+              child: Text(isRTL ? 'התחבר שוב' : 'Log In Again'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -209,6 +256,21 @@ class _StudentAssignmentScreenState extends State<StudentAssignmentScreen> {
             ),
           ],
         ),
+        actions: [
+          // Create new student button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingSmall),
+            child: IconButton(
+              icon: const Icon(
+                Icons.person_add,
+                color: AppColors.secondary,
+                size: 28,
+              ),
+              onPressed: _showCreateStudentDialog,
+              tooltip: isRTL ? 'צור תלמיד חדש' : 'Create New Student',
+            ),
+          ),
+        ],
       ),
       body: DefaultTabController(
         length: 2,
@@ -394,6 +456,15 @@ class _StudentAssignmentScreenState extends State<StudentAssignmentScreen> {
     );
   }
 
+  /// Navigate to student preview screen
+  void _previewAsStudent(UserModel student) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => StudentPreviewScreen(student: student),
+      ),
+    );
+  }
+
   /// Build student card
   Widget _buildStudentCard({
     required UserModel student,
@@ -404,54 +475,99 @@ class _StudentAssignmentScreenState extends State<StudentAssignmentScreen> {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: AppTheme.spacingMedium),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(AppTheme.spacingSmall),
-          decoration: BoxDecoration(
-            color: isAssigned
-                ? AppColors.success.withOpacity(0.1)
-                : AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-          ),
-          child: Icon(
-            isAssigned ? Icons.check_circle : Icons.person_add,
-            color: isAssigned ? AppColors.success : AppColors.primary,
-          ),
-        ),
-        title: Text(
-          student.fullName,
-          style: const TextStyle(
-            fontSize: AppTheme.fontSizeMedium,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        subtitle: Text(
-          '@${student.userName} • ${student.city}',
-          style: const TextStyle(
-            fontSize: AppTheme.fontSizeSmall,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        trailing: _isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.primary,
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Student info row
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.spacingSmall),
+                  decoration: BoxDecoration(
+                    color: isAssigned
+                        ? AppColors.success.withOpacity(0.1)
+                        : AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                  ),
+                  child: Icon(
+                    isAssigned ? Icons.check_circle : Icons.person_add,
+                    color: isAssigned ? AppColors.success : AppColors.primary,
+                  ),
                 ),
-              )
-            : IconButton(
-                icon: Icon(
-                  isAssigned ? Icons.remove_circle : Icons.add_circle,
-                  color: isAssigned ? AppColors.error : AppColors.success,
+                const SizedBox(width: AppTheme.spacingMedium),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        student.fullName,
+                        style: const TextStyle(
+                          fontSize: AppTheme.fontSizeMedium,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '@${student.userName} • ${student.city}',
+                        style: const TextStyle(
+                          fontSize: AppTheme.fontSizeSmall,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                onPressed: onTap,
-                tooltip: isAssigned
-                    ? (isRTL ? 'הסר מכיתה' : 'Remove from classroom')
-                    : (isRTL ? 'הוסף לכיתה' : 'Add to classroom'),
+                _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
+                      )
+                    : IconButton(
+                        icon: Icon(
+                          isAssigned ? Icons.remove_circle : Icons.add_circle,
+                          color: isAssigned ? AppColors.error : AppColors.success,
+                        ),
+                        onPressed: onTap,
+                        tooltip: isAssigned
+                            ? (isRTL ? 'הסר מכיתה' : 'Remove from classroom')
+                            : (isRTL ? 'הוסף לכיתה' : 'Add to classroom'),
+                      ),
+              ],
+            ),
+
+            // Sign In as Student button (only for assigned students)
+            if (isAssigned) ...[
+              const SizedBox(height: AppTheme.spacingSmall),
+              const Divider(),
+              const SizedBox(height: AppTheme.spacingSmall),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _previewAsStudent(student),
+                  icon: const Icon(Icons.visibility, size: 18),
+                  label: Text(
+                    isRTL ? 'צפה כתלמיד' : 'View as Student',
+                    style: const TextStyle(fontSize: AppTheme.fontSizeMedium),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.secondary,
+                    side: const BorderSide(color: AppColors.secondary),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppTheme.spacingSmall,
+                    ),
+                  ),
+                ),
               ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/class_model.dart';
+import '../../auth/models/user_model.dart';
 
 /// Service for managing classroom operations
 /// Implements singleton pattern to ensure single instance across the app
@@ -12,6 +14,7 @@ class ClassService {
 
   // Firestore instance
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Collection reference
   static const String _classesCollection = 'classes';
@@ -258,6 +261,93 @@ class ClassService {
     } catch (e) {
       print('❌ Error deleting classroom: $e');
       throw Exception('Failed to delete classroom: $e');
+    }
+  }
+
+  /// Create a new student and add them to a classroom (for teachers)
+  /// The teacher must own the classroom to create students for it
+  Future<UserModel> createStudentForClass({
+    required String classId,
+    required String email,
+    required String password,
+    required String fullName,
+    required String userName,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('Teacher must be logged in to create students');
+    }
+
+    try {
+      // Get the classroom to verify ownership and get school info
+      final classDoc =
+          await _firestore.collection(_classesCollection).doc(classId).get();
+
+      if (!classDoc.exists) {
+        throw Exception('Classroom not found');
+      }
+
+      final classData = ClassModel.fromJson(classDoc.data()!);
+
+      // Verify the current user is the teacher of this classroom
+      if (classData.teacherId != currentUser.uid) {
+        throw Exception('Only the classroom teacher can create students');
+      }
+
+      print('🔵 Creating student for classroom: ${classData.name}');
+
+      // Create the user account in Firebase Auth
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final newUserUid = userCredential.user!.uid;
+      print('✅ Firebase Auth user created: $newUserUid');
+
+      // Create student data with classroom info pre-filled
+      final userData = UserModel(
+        id: newUserUid,
+        userName: userName,
+        fullName: fullName,
+        email: email,
+        role: 'student',
+        schoolName: classData.schoolName,
+        city: '', // Can be updated later
+        grade: classData.grade,
+        classId: classId, // Automatically assign to the classroom
+        createdAt: DateTime.now(),
+        xpPoints: 0,
+        currentLevel: 1,
+        currentStreak: 0,
+        longestStreak: 0,
+        xpHistory: {},
+        completedLessons: [],
+      );
+
+      // Save student to Firestore
+      await _firestore
+          .collection(_usersCollection)
+          .doc(newUserUid)
+          .set(userData.toJson());
+      print('✅ Student document created in Firestore');
+
+      // Add student to classroom's studentIds list
+      final updatedStudentIds = [...classData.studentIds, newUserUid];
+      await _firestore.collection(_classesCollection).doc(classId).update({
+        'studentIds': updatedStudentIds,
+        'updatedAt': Timestamp.now(),
+      });
+      print('✅ Student added to classroom');
+
+      // Sign out newly created user (to keep teacher logged in)
+      await _auth.signOut();
+      print('✅ New user signed out');
+
+      return userData;
+    } catch (e) {
+      print('❌ Error creating student: $e');
+      throw Exception('Failed to create student: $e');
     }
   }
 }
