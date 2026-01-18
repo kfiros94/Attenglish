@@ -12,6 +12,9 @@ import '../services/document_storage_service.dart';
 import 'review_activities_screen.dart';
 import '../../lessons/models/activity_model.dart';
 import '../../lessons/widgets/image_upload_widget.dart';
+import '../../classroom/services/class_service.dart';
+import '../../classroom/models/class_model.dart';
+import '../../auth/services/auth_service.dart';
 
 /// Screen for generating AI-powered learning activities
 ///
@@ -39,8 +42,12 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   // Text input controller
   final TextEditingController _textController = TextEditingController();
 
+  // Classroom selection
+  List<ClassModel> _classrooms = [];
+  ClassModel? _selectedClassroom;
+  bool _isLoadingClassrooms = false;
+
   // Generation configuration
-  String? _selectedGrade;
   String _selectedDifficulty = 'beginner';
   int _mcCount = 5; // Multiple choice count (single answer)
   int _maCount = 0; // Multiple answer count (checkboxes)
@@ -69,6 +76,33 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
 
     // Listen to text changes to update word count
     _textController.addListener(_updateWordCount);
+
+    // Load teacher's classrooms
+    _loadClassrooms();
+  }
+
+  /// Load classrooms for the current teacher
+  Future<void> _loadClassrooms() async {
+    setState(() => _isLoadingClassrooms = true);
+
+    try {
+      final user = AuthService.instance.currentUser;
+      if (user == null) return;
+
+      final classrooms = await ClassService.instance.getTeacherClasses(user.uid);
+
+      setState(() {
+        _classrooms = classrooms;
+        // Auto-select first classroom if available
+        if (classrooms.isNotEmpty) {
+          _selectedClassroom = classrooms.first;
+        }
+        _isLoadingClassrooms = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingClassrooms = false);
+      _showErrorSnackBar('Failed to load classrooms: $e');
+    }
   }
 
   @override
@@ -99,9 +133,9 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       return;
     }
 
-    // Validate grade level is selected
-    if (_selectedGrade == null) {
-      _showErrorSnackBar('Please select a grade level.');
+    // Validate classroom is selected
+    if (_selectedClassroom == null) {
+      _showErrorSnackBar('Please select a classroom first.');
       return;
     }
 
@@ -120,9 +154,12 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       return;
     }
 
+    // Convert classroom grade (int) to grade level string
+    final gradeLevel = _getGradeLevelString(_selectedClassroom!.grade);
+
     // Create generation config
     final config = GenerationConfig(
-      gradeLevel: _selectedGrade!,
+      gradeLevel: gradeLevel,
       difficulty: _selectedDifficulty,
       multipleChoiceCount: _mcCount,
       multipleAnswerCount: _maCount,
@@ -215,6 +252,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
             builder: (context) => ReviewActivitiesScreen(
               response: response,
               extractedDocument: _extractedDocument,
+              preselectedClassroom: _selectedClassroom,
             ),
           ),
         );
@@ -779,9 +817,9 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   Future<void> _generateFromDocument() async {
     if (_extractedDocument == null) return;
 
-    // Validate grade level is selected
-    if (_selectedGrade == null) {
-      _showErrorSnackBar('Please select a grade level.');
+    // Validate classroom is selected
+    if (_selectedClassroom == null) {
+      _showErrorSnackBar('Please select a classroom first.');
       return;
     }
 
@@ -796,9 +834,12 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       return;
     }
 
+    // Convert classroom grade (int) to grade level string
+    final gradeLevel = _getGradeLevelString(_selectedClassroom!.grade);
+
     // Build config from form
     final config = GenerationConfig(
-      gradeLevel: _selectedGrade!,
+      gradeLevel: gradeLevel,
       difficulty: _selectedDifficulty,
       multipleChoiceCount: _mcCount,
       multipleAnswerCount: _maCount,
@@ -1377,53 +1418,60 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
 
             const SizedBox(height: 16),
 
-            // Grade Level
+            // Classroom Selection
             Text(
-              'Grade Level',
+              'Select Classroom',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _selectedGrade,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                hintText: 'Choose grade level',
+            if (_isLoadingClassrooms)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_classrooms.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: const Text(
+                  'No classrooms found. Please create a classroom first.',
+                  style: TextStyle(color: Colors.orange),
+                ),
+              )
+            else
+              DropdownButtonFormField<ClassModel>(
+                value: _selectedClassroom,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  hintText: 'Choose classroom',
+                ),
+                items: _classrooms
+                    .map((classroom) => DropdownMenuItem(
+                          value: classroom,
+                          child: Text('${classroom.name} (Grade ${classroom.grade})'),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedClassroom = value;
+                    // Auto-set difficulty for grades 1-9 (grade-based)
+                    // For grades 10-12, keep current selection
+                    if (value != null && value.grade >= 1 && value.grade <= 9) {
+                      // For grades 1-9, difficulty is ignored (grade determines difficulty)
+                      // Set to 'beginner' as placeholder, won't be used in AI prompt
+                      _selectedDifficulty = 'beginner';
+                    }
+                  });
+                },
               ),
-              items: [
-                '1st',
-                '2nd',
-                '3rd',
-                '4th',
-                '5th',
-                '6th',
-                '7th',
-                '8th',
-                '9th',
-                '10th',
-                '11th',
-                '12th'
-              ]
-                  .map((grade) => DropdownMenuItem(
-                        value: grade,
-                        child: Text(grade),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedGrade = value!;
-                  // Auto-set difficulty for grades 1-9 (grade-based)
-                  // For grades 10-12, keep current selection
-                  final gradeNum = int.tryParse(value.replaceAll(RegExp(r'\D'), ''));
-                  if (gradeNum != null && gradeNum >= 1 && gradeNum <= 9) {
-                    // For grades 1-9, difficulty is ignored (grade determines difficulty)
-                    // Set to 'beginner' as placeholder, won't be used in AI prompt
-                    _selectedDifficulty = 'beginner';
-                  }
-                });
-              },
-            ),
 
             const SizedBox(height: 16),
 
@@ -1473,7 +1521,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Difficulty automatically matches $_selectedGrade grade level',
+                          'Difficulty automatically matches Grade ${_selectedClassroom?.grade} level',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.blue[700],
                               ),
@@ -1649,11 +1697,23 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
     );
   }
 
-  /// Checks if the currently selected grade is high school (10-12)
-  /// Returns true for grades 10-12, false for grades 1-9 or null
+  /// Converts grade number (1-12) to grade level string ("1st", "2nd", etc.)
+  String _getGradeLevelString(int grade) {
+    final suffixes = ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th'];
+    if (grade >= 1 && grade <= 10) {
+      return '$grade${suffixes[grade]}';
+    } else if (grade == 11) {
+      return '11th';
+    } else if (grade == 12) {
+      return '12th';
+    }
+    return '${grade}th'; // Fallback
+  }
+
+  /// Checks if the currently selected classroom is high school (10-12)
+  /// Returns true for grades 10-12, false otherwise
   bool _isHighSchoolGrade() {
-    if (_selectedGrade == null) return false;
-    final gradeNum = int.tryParse(_selectedGrade!.replaceAll(RegExp(r'\D'), ''));
-    return gradeNum != null && gradeNum >= 10;
+    if (_selectedClassroom == null) return false;
+    return _selectedClassroom!.grade >= 10;
   }
 }

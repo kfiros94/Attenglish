@@ -20,11 +20,13 @@ import '../services/document_storage_service.dart';
 class ReviewActivitiesScreen extends StatefulWidget {
   final AiGenerationResponse response;
   final DocumentExtractionResult? extractedDocument;
+  final ClassModel? preselectedClassroom;
 
   const ReviewActivitiesScreen({
     super.key,
     required this.response,
     this.extractedDocument,
+    this.preselectedClassroom,
   });
 
   @override
@@ -701,9 +703,11 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
     // Controllers for dialog - use edited values from summary card
     final titleController = TextEditingController(text: _lessonNameController.text.trim());
     final descriptionController = TextEditingController(text: _lessonDescriptionController.text.trim());
-    ClassModel? selectedClass = classes.first;
+    // Use preselected classroom if available, otherwise default to first
+    ClassModel? selectedClass = widget.preselectedClassroom ?? classes.first;
     String selectedStatus = 'draft';
-    int selectedGrade = 3;
+    // Use classroom's grade if available
+    int selectedGrade = selectedClass?.grade ?? 3;
     int selectedDifficulty = 2;
 
     await showDialog(
