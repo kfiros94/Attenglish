@@ -29,6 +29,7 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
   String? _errorMessage;
   bool _showCelebration = false;
   int _totalPointsEarned = 0;
+  bool _hasPdfBeenOpened = false;
 
   @override
   void initState() {
@@ -652,30 +653,32 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
             const SizedBox(height: ADHDTheme.spacingXLarge),
           ],
 
-          // Encouraging message from Atti
-          Container(
-            padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
-            decoration: BoxDecoration(
-              color: ADHDTheme.secondaryGreen.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
-            ),
-            child: Row(
-              children: [
-                const Text('💪', style: TextStyle(fontSize: 32)),
-                const SizedBox(width: ADHDTheme.spacingMedium),
-                Expanded(
-                  child: Text(
-                    'Great job reading! Did you understand everything?',
-                    style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: ADHDTheme.textPrimary,
+          // Encouraging message from Atti (only show after PDF is opened)
+          if (_hasPdfBeenOpened) ...[
+            Container(
+              padding: const EdgeInsets.all(ADHDTheme.spacingMedium),
+              decoration: BoxDecoration(
+                color: ADHDTheme.secondaryGreen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(ADHDTheme.radiusMedium),
+              ),
+              child: Row(
+                children: [
+                  const Text('💪', style: TextStyle(fontSize: 32)),
+                  const SizedBox(width: ADHDTheme.spacingMedium),
+                  Expanded(
+                    child: Text(
+                      'Great job reading! Did you understand everything?',
+                      style: ADHDTheme.studentTextTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: ADHDTheme.textPrimary,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: ADHDTheme.spacingXLarge),
+            const SizedBox(height: ADHDTheme.spacingXLarge),
+          ],
 
           // Activities Section (if available)
           if (_lesson!.activities.isNotEmpty) ...[
@@ -1154,6 +1157,11 @@ class _StudentLessonViewerState extends State<StudentLessonViewer> {
         // Failed to launch - show helpful error
         throw Exception('No app available to open this file type');
       }
+
+      // Mark PDF as opened (for showing "Great job reading!" message)
+      setState(() {
+        _hasPdfBeenOpened = true;
+      });
 
       // Show success message
       if (mounted) {
