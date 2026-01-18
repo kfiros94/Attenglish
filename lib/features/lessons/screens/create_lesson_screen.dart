@@ -130,6 +130,29 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
 
   /// Publish lesson
   Future<void> _publish() async {
+    // Show popup if lesson content is empty
+    if (_contentController.text.trim().isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Missing Lesson Content'),
+            ],
+          ),
+          content: const Text('Please enter lesson content before publishing.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     await _saveLesson(status: 'published');
   }
 

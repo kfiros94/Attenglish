@@ -40,7 +40,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   final TextEditingController _textController = TextEditingController();
 
   // Generation configuration
-  String _selectedGrade = '3rd';
+  String? _selectedGrade;
   String _selectedDifficulty = 'beginner';
   int _mcCount = 5; // Multiple choice count (single answer)
   int _maCount = 0; // Multiple answer count (checkboxes)
@@ -99,6 +99,12 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       return;
     }
 
+    // Validate grade level is selected
+    if (_selectedGrade == null) {
+      _showErrorSnackBar('Please select a grade level.');
+      return;
+    }
+
     // Validate word count
     if (_wordCount < 50) {
       _showErrorSnackBar(
@@ -116,7 +122,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
 
     // Create generation config
     final config = GenerationConfig(
-      gradeLevel: _selectedGrade,
+      gradeLevel: _selectedGrade!,
       difficulty: _selectedDifficulty,
       multipleChoiceCount: _mcCount,
       multipleAnswerCount: _maCount,
@@ -773,6 +779,12 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   Future<void> _generateFromDocument() async {
     if (_extractedDocument == null) return;
 
+    // Validate grade level is selected
+    if (_selectedGrade == null) {
+      _showErrorSnackBar('Please select a grade level.');
+      return;
+    }
+
     // Validate document
     if (!_extractedDocument!.isValidLength) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -786,7 +798,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
 
     // Build config from form
     final config = GenerationConfig(
-      gradeLevel: _selectedGrade,
+      gradeLevel: _selectedGrade!,
       difficulty: _selectedDifficulty,
       multipleChoiceCount: _mcCount,
       multipleAnswerCount: _maCount,
@@ -1377,6 +1389,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                 border: OutlineInputBorder(),
                 contentPadding:
                     EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                hintText: 'Choose grade level',
               ),
               items: [
                 '1st',
@@ -1559,12 +1572,13 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     'Total Activities:',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     '${_mcCount + _maCount + _fbCount + _tfCount + _ddCount + _idCount}',
                     style: const TextStyle(
@@ -1636,9 +1650,10 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   }
 
   /// Checks if the currently selected grade is high school (10-12)
-  /// Returns true for grades 10-12, false for grades 1-9
+  /// Returns true for grades 10-12, false for grades 1-9 or null
   bool _isHighSchoolGrade() {
-    final gradeNum = int.tryParse(_selectedGrade.replaceAll(RegExp(r'\D'), ''));
+    if (_selectedGrade == null) return false;
+    final gradeNum = int.tryParse(_selectedGrade!.replaceAll(RegExp(r'\D'), ''));
     return gradeNum != null && gradeNum >= 10;
   }
 }

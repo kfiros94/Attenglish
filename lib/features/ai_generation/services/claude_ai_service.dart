@@ -35,8 +35,8 @@ import './prompt_builder_service.dart';
 /// }
 /// ```
 class ClaudeAiService {
-  /// Anthropic API key for authentication
-  final String apiKey;
+  /// Anthropic API key for authentication (not needed on web)
+  final String? apiKey;
 
   /// HTTP client for making requests (can be injected for testing)
   final http.Client _client;
@@ -44,19 +44,24 @@ class ClaudeAiService {
   /// Creates a new Claude AI service
   ///
   /// Parameters:
-  /// - [apiKey]: Anthropic API key
+  /// - [apiKey]: Anthropic API key (optional on web)
   /// - [client]: Optional HTTP client (defaults to http.Client())
   ClaudeAiService({
-    required this.apiKey,
+    this.apiKey,
     http.Client? client,
   }) : _client = client ?? http.Client();
 
   /// Creates a service instance using the default API key from environment
   ///
   /// The API key is read from environment variables via [AiConfig.getApiKey()].
+  /// On web, no API key is needed (uses Cloud Functions instead).
   ///
-  /// Throws [Exception] if API key is not configured.
+  /// Throws [Exception] if API key is not configured on mobile/desktop.
   factory ClaudeAiService.withDefaultKey() {
+    // On web, don't load API key (uses Cloud Functions)
+    if (kIsWeb) {
+      return ClaudeAiService();
+    }
     return ClaudeAiService(apiKey: AiConfig.getApiKey());
   }
 
@@ -214,59 +219,46 @@ class ClaudeAiService {
   /// Calls Claude API via Firebase Cloud Function (for web platform)
   ///
   /// This method is used when running on web to avoid CORS issues.
-  /// The Cloud Function acts as a proxy, calling the Anthropic API server-side.
+  /// The Cloud Function acts as a proxy, calling the Anthropic API server-side with a secure API key.
   Future<Map<String, dynamic>> _callClaudeViaCloudFunction(String prompt) async {
     try {
-      // Get Firebase Auth token for authentication
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      // Use Firebase Cloud Function callable (more secure, handles auth automatically)
+      final functions = FirebaseFunctions.instance;
+
+      final result = await functions.httpsCallable('generateActivitiesWithAI').call({
+        'messages': [
+          {
+            'role': 'user',
+            'content': prompt,
+          }
+        ],
+        'maxTokens': AiConfig.maxTokensPerRequest,
+      });
+
+      // The cloud function returns { content: "..." }
+      final data = result.data as Map<String, dynamic>;
+      final content = data['content'] as String;
+
+      // Parse the JSON content
+      return jsonDecode(content) as Map<String, dynamic>;
+
+    } on FirebaseFunctionsException catch (e) {
+      if (e.code == 'unauthenticated') {
         throw AiGenerationException('You must be logged in to generate activities.');
-      }
-
-      final idToken = await user.getIdToken();
-      if (idToken == null) {
-        throw AiGenerationException('Failed to get authentication token.');
-      }
-
-      // Call Cloud Function via HTTP POST
-      final functionUrl = 'https://us-central1-attenglish-dev.cloudfunctions.net/generateActivitiesWithAI';
-
-      final response = await http.post(
-        Uri.parse(functionUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-        body: jsonEncode({
-          'prompt': prompt,
-          'apiKey': apiKey,
-        }),
-      ).timeout(AiConfig.requestTimeout);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        if (data['success'] == true) {
-          return data['data'] as Map<String, dynamic>;
-        } else {
-          throw AiGenerationException(
-            'Cloud Function failed: ${data['error'] ?? 'Unknown error'}',
-          );
-        }
-      } else if (response.statusCode == 401) {
-        throw AiGenerationException('Authentication failed. Please sign in again.');
-      } else if (response.statusCode == 403) {
-        throw AiGenerationException('Invalid API key. Please check your configuration.');
-      } else if (response.statusCode == 429) {
-        throw AiGenerationException('Rate limit exceeded. Please try again in a few minutes.');
+      } else if (e.code == 'failed-precondition') {
+        throw AiGenerationException(
+          'API key not configured on server. Please contact support.',
+        );
       } else {
         throw AiGenerationException(
-          'Cloud Function error: ${response.statusCode}\n${response.body}',
+          'Cloud Function error: ${e.message}',
+          originalError: e,
         );
       }
-    } on TimeoutException {
+    } on FormatException catch (e) {
       throw AiGenerationException(
-        'Request timed out after ${AiConfig.requestTimeout.inSeconds} seconds. '
-        'Please try again.',
+        'Invalid JSON response from AI. The AI may have returned improperly formatted data.',
+        originalError: e,
       );
     } catch (e) {
       if (e is AiGenerationException) {
@@ -284,6 +276,12 @@ class ClaudeAiService {
   /// This method makes direct HTTP calls to the Anthropic API.
   /// Only works on mobile and desktop due to CORS restrictions on web.
   Future<Map<String, dynamic>> _callClaudeApiDirect(String prompt) async {
+    if (apiKey == null || apiKey!.isEmpty) {
+      throw AiGenerationException(
+        'API key not configured. Please create a .env file with ANTHROPIC_API_KEY=your_key',
+      );
+    }
+
     const maxRetries = 3;
 
     for (int attempt = 0; attempt < maxRetries; attempt++) {
@@ -293,7 +291,7 @@ class ClaudeAiService {
             .post(
               Uri.parse('${AiConfig.apiBaseUrl}/messages'),
               headers: {
-                'x-api-key': apiKey,
+                'x-api-key': apiKey!,
                 'anthropic-version': AiConfig.apiVersion,
                 'content-type': 'application/json',
               },
