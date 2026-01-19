@@ -13,6 +13,11 @@ class UserModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
+  // Parent details (for students)
+  final String? parentFullName;
+  final String? parentPhone;
+  final String? parentEmail;
+
   // Gamification fields
   final int xpPoints;              // Total XP earned
   final int currentLevel;          // Current level (1-20+)
@@ -34,6 +39,9 @@ class UserModel {
     this.classId,
     required this.createdAt,
     this.updatedAt,
+    this.parentFullName,
+    this.parentPhone,
+    this.parentEmail,
     this.xpPoints = 0,
     this.currentLevel = 1,
     this.currentStreak = 0,
@@ -59,6 +67,9 @@ class UserModel {
       updatedAt: json['updatedAt'] != null
           ? _parseDateTime(json['updatedAt'])
           : null,
+      parentFullName: json['parentFullName'] as String?,
+      parentPhone: json['parentPhone'] as String?,
+      parentEmail: json['parentEmail'] as String?,
       xpPoints: json['xpPoints'] as int? ?? 0,
       currentLevel: json['currentLevel'] as int? ?? 1,
       currentStreak: json['currentStreak'] as int? ?? 0,
@@ -110,6 +121,9 @@ class UserModel {
       'classId': classId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'parentFullName': parentFullName,
+      'parentPhone': parentPhone,
+      'parentEmail': parentEmail,
       'xpPoints': xpPoints,
       'currentLevel': currentLevel,
       'currentStreak': currentStreak,
@@ -133,6 +147,9 @@ class UserModel {
     String? classId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? parentFullName,
+    String? parentPhone,
+    String? parentEmail,
     int? xpPoints,
     int? currentLevel,
     int? currentStreak,
@@ -153,6 +170,9 @@ class UserModel {
       classId: classId ?? this.classId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      parentFullName: parentFullName ?? this.parentFullName,
+      parentPhone: parentPhone ?? this.parentPhone,
+      parentEmail: parentEmail ?? this.parentEmail,
       xpPoints: xpPoints ?? this.xpPoints,
       currentLevel: currentLevel ?? this.currentLevel,
       currentStreak: currentStreak ?? this.currentStreak,

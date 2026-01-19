@@ -138,6 +138,9 @@ class AdminService {
     required String schoolName,
     required String city,
     required int grade,
+    required String parentFullName,
+    required String parentPhone,
+    String? parentEmail,
   }) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -170,6 +173,9 @@ class AdminService {
         city: city,
         grade: grade,
         createdAt: DateTime.now(),
+        parentFullName: parentFullName,
+        parentPhone: parentPhone,
+        parentEmail: parentEmail,
         xpPoints: 0,
         currentLevel: 1,
         currentStreak: 0,

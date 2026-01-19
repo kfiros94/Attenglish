@@ -23,6 +23,11 @@ class _StudentCreationFormState extends State<StudentCreationForm> {
   final _cityController = TextEditingController();
   final _gradeController = TextEditingController();
 
+  // Parent details controllers
+  final _parentFullNameController = TextEditingController();
+  final _parentPhoneController = TextEditingController();
+  final _parentEmailController = TextEditingController();
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -37,6 +42,9 @@ class _StudentCreationFormState extends State<StudentCreationForm> {
     _schoolNameController.dispose();
     _cityController.dispose();
     _gradeController.dispose();
+    _parentFullNameController.dispose();
+    _parentPhoneController.dispose();
+    _parentEmailController.dispose();
     super.dispose();
   }
 
@@ -59,6 +67,11 @@ class _StudentCreationFormState extends State<StudentCreationForm> {
         schoolName: _schoolNameController.text.trim(),
         city: _cityController.text.trim(),
         grade: int.parse(_gradeController.text.trim()),
+        parentFullName: _parentFullNameController.text.trim(),
+        parentPhone: _parentPhoneController.text.trim(),
+        parentEmail: _parentEmailController.text.trim().isNotEmpty
+            ? _parentEmailController.text.trim()
+            : null,
       );
 
       if (mounted) {
@@ -349,6 +362,88 @@ class _StudentCreationFormState extends State<StudentCreationForm> {
                   final grade = int.tryParse(value);
                   if (grade == null || grade < 1 || grade > 12) {
                     return isRTL ? 'כיתה חייבת להיות בין 1-12' : 'Grade must be between 1-12';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppTheme.spacingLarge),
+
+              // Parent Details Section
+              Text(
+                isRTL ? 'פרטי הורה' : 'Parent Details',
+                style: const TextStyle(
+                  fontSize: AppTheme.fontSizeMedium,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.secondary,
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingSmall),
+
+              // Parent Full Name
+              TextFormField(
+                controller: _parentFullNameController,
+                decoration: InputDecoration(
+                  labelText: isRTL ? 'שם מלא של ההורה' : 'Parent Full Name',
+                  hintText: isRTL ? 'שם ההורה' : 'Parent name',
+                  prefixIcon: const Icon(Icons.family_restroom),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return isRTL
+                        ? 'אנא הכנס שם הורה'
+                        : 'Please enter parent name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppTheme.spacingMedium),
+
+              // Parent Phone
+              TextFormField(
+                controller: _parentPhoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: isRTL ? 'טלפון הורה' : 'Parent Phone',
+                  hintText: isRTL ? '050-1234567' : '050-1234567',
+                  prefixIcon: const Icon(Icons.phone),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return isRTL
+                        ? 'אנא הכנס טלפון הורה'
+                        : 'Please enter parent phone';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppTheme.spacingMedium),
+
+              // Parent Email (Optional)
+              TextFormField(
+                controller: _parentEmailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: isRTL ? 'אימייל הורה (אופציונלי)' : 'Parent Email (Optional)',
+                  hintText: 'parent@example.com',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                  ),
+                ),
+                validator: (value) {
+                  // Email is optional, but if provided, must be valid
+                  if (value != null && value.trim().isNotEmpty) {
+                    if (!value.contains('@')) {
+                      return isRTL
+                          ? 'אנא הכנס אימייל תקין'
+                          : 'Please enter a valid email';
+                    }
                   }
                   return null;
                 },

@@ -272,6 +272,9 @@ class ClassService {
     required String password,
     required String fullName,
     required String userName,
+    required String parentFullName,
+    required String parentPhone,
+    String? parentEmail,
   }) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -317,6 +320,9 @@ class ClassService {
         grade: classData.grade,
         classId: classId, // Automatically assign to the classroom
         createdAt: DateTime.now(),
+        parentFullName: parentFullName,
+        parentPhone: parentPhone,
+        parentEmail: parentEmail,
         xpPoints: 0,
         currentLevel: 1,
         currentStreak: 0,
