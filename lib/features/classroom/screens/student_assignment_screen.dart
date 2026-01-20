@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/services/localization_service.dart';
 import 'student_preview_screen.dart';
 import '../widgets/teacher_student_creation_form.dart';
+import '../widgets/excel_student_import.dart';
 
 /// Screen for teachers to assign students to their classrooms
 class StudentAssignmentScreen extends StatefulWidget {
@@ -153,6 +154,24 @@ class _StudentAssignmentScreenState extends State<StudentAssignmentScreen> {
     }
   }
 
+  /// Show dialog to import students from Excel
+  Future<void> _showImportStudentsDialog() async {
+    final result = await showExcelStudentImportDialog(context, widget.classroom);
+
+    if (result == true && mounted) {
+      // Refresh happens automatically via StreamBuilder
+      final isRTL = LocalizationService.instance.isRTL;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isRTL ? 'הייבוא הושלם בהצלחה' : 'Import completed successfully',
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
   /// Remove student from classroom
   Future<void> _removeStudent(UserModel student) async {
     final isRTL = LocalizationService.instance.isRTL;
@@ -257,6 +276,19 @@ class _StudentAssignmentScreenState extends State<StudentAssignmentScreen> {
           ],
         ),
         actions: [
+          // Import students from Excel button
+          Padding(
+            padding: const EdgeInsets.only(right: AppTheme.spacingSmall),
+            child: IconButton(
+              icon: const Icon(
+                Icons.upload_file,
+                color: AppColors.primary,
+                size: 26,
+              ),
+              onPressed: _showImportStudentsDialog,
+              tooltip: isRTL ? 'ייבוא תלמידים מאקסל' : 'Import from Excel',
+            ),
+          ),
           // Create new student button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingSmall),
