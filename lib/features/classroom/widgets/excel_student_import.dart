@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'dart:typed_data';
 import '../models/class_model.dart';
 import '../../../core/theme/app_theme.dart';
@@ -59,10 +60,35 @@ class _ExcelStudentImportDialogState extends State<ExcelStudentImportDialog> {
   List<StudentImportData> _students = [];
   bool _isLoading = false;
   bool _isImporting = false;
+  bool _isDragging = false;
   String? _fileName;
   String? _errorMessage;
   int _successCount = 0;
   int _failedCount = 0;
+
+  /// Handle file from drag & drop or file picker
+  Future<void> _handleFile(String fileName, Uint8List bytes) async {
+    setState(() {
+      _fileName = fileName;
+      _isLoading = true;
+      _errorMessage = null;
+      _students = [];
+    });
+
+    // Check file extension
+    final extension = fileName.split('.').last.toLowerCase();
+    if (!['xlsx', 'xls', 'ods'].contains(extension)) {
+      setState(() {
+        _errorMessage = LocalizationService.instance.isRTL
+            ? 'סוג קובץ לא נתמך. השתמש ב-.xlsx, .xls או .ods'
+            : 'Unsupported file type. Use .xlsx, .xls, or .ods';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    _parseExcel(bytes);
+  }
 
   /// Pick and parse Excel file
   Future<void> _pickExcelFile() async {
@@ -87,7 +113,6 @@ class _ExcelStudentImportDialogState extends State<ExcelStudentImportDialog> {
       }
 
       final file = result.files.first;
-      _fileName = file.name;
 
       if (file.bytes == null) {
         setState(() {
@@ -99,7 +124,7 @@ class _ExcelStudentImportDialogState extends State<ExcelStudentImportDialog> {
         return;
       }
 
-      _parseExcel(file.bytes!);
+      await _handleFile(file.name, file.bytes!);
     } catch (e) {
       setState(() {
         _errorMessage = LocalizationService.instance.isRTL
@@ -456,23 +481,132 @@ class _ExcelStudentImportDialogState extends State<ExcelStudentImportDialog> {
               ),
               const SizedBox(height: AppTheme.spacingMedium),
 
-              // File picker button
-              ElevatedButton.icon(
-                onPressed: _isLoading || _isImporting ? null : _pickExcelFile,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.folder_open),
-                label: Text(
-                  _fileName != null
-                      ? _fileName!
-                      : (isRTL ? 'בחר קובץ אקסל' : 'Select Excel File'),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(AppTheme.spacingMedium),
+              // Drag & Drop zone with smooth animations
+              DropTarget(
+                onDragEntered: (_) => setState(() => _isDragging = true),
+                onDragExited: (_) => setState(() => _isDragging = false),
+                onDragDone: (details) async {
+                  setState(() => _isDragging = false);
+                  if (details.files.isNotEmpty) {
+                    final file = details.files.first;
+                    final bytes = await file.readAsBytes();
+                    await _handleFile(file.name, bytes);
+                  }
+                },
+                child: GestureDetector(
+                  onTap: _isLoading || _isImporting ? null : _pickExcelFile,
+                  child: MouseRegion(
+                    cursor: _isLoading || _isImporting
+                        ? SystemMouseCursors.forbidden
+                        : SystemMouseCursors.click,
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 1.0, end: _isDragging ? 1.02 : 1.0),
+                      duration: const Duration(milliseconds: 150),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, scale, child) => Transform.scale(
+                        scale: scale,
+                        child: child,
+                      ),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.all(AppTheme.spacingLarge),
+                        decoration: BoxDecoration(
+                          color: _isDragging
+                              ? AppColors.primary.withOpacity(0.08)
+                              : (_fileName != null
+                                  ? AppColors.success.withOpacity(0.05)
+                                  : AppColors.background),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                          border: Border.all(
+                            color: _isDragging
+                                ? AppColors.primary
+                                : (_fileName != null
+                                    ? AppColors.success
+                                    : AppColors.textTertiary),
+                            width: _isDragging ? 2.5 : 1,
+                          ),
+                          boxShadow: _isDragging
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primary.withOpacity(0.25),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.03),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_isLoading)
+                              const CircularProgressIndicator()
+                            else if (_fileName != null)
+                              const Icon(
+                                Icons.check_circle,
+                                size: 48,
+                                color: AppColors.success,
+                              )
+                            else
+                              TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 0.0, end: _isDragging ? -8.0 : 0.0),
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeOutCubic,
+                                builder: (context, offset, child) => Transform.translate(
+                                  offset: Offset(0, offset),
+                                  child: Icon(
+                                    _isDragging ? Icons.file_download : Icons.cloud_upload_outlined,
+                                    size: 48,
+                                    color: _isDragging ? AppColors.primary : AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: AppTheme.spacingSmall),
+                            AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              style: TextStyle(
+                                fontSize: _isDragging ? AppTheme.fontSizeMedium + 1 : AppTheme.fontSizeMedium,
+                                color: _fileName != null
+                                    ? AppColors.success
+                                    : (_isDragging ? AppColors.primary : AppColors.textSecondary),
+                                fontWeight: _fileName != null || _isDragging ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                              child: Text(
+                                _isDragging
+                                    ? (isRTL ? 'שחרר כאן!' : 'Drop file here!')
+                                    : (_fileName ?? (isRTL
+                                        ? 'גרור קובץ אקסל לכאן או לחץ לבחירה'
+                                        : 'Drag Excel file here or click to browse')),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            AnimatedOpacity(
+                              duration: const Duration(milliseconds: 200),
+                              opacity: _isDragging ? 0.0 : 1.0,
+                              child: Column(
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    isRTL ? 'פורמטים נתמכים: .xlsx, .xls, .ods' : 'Supported: .xlsx, .xls, .ods',
+                                    style: const TextStyle(
+                                      fontSize: AppTheme.fontSizeSmall,
+                                      color: AppColors.textTertiary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
 

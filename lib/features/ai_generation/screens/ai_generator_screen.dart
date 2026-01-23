@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import '../models/generation_config_model.dart';
 import '../models/ai_response_model.dart';
 import '../models/activity_result_model.dart';
@@ -66,6 +67,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   Uint8List? _selectedFileBytes; // For web platform
   DocumentExtractionResult? _extractedDocument;
   bool _isExtracting = false;
+  bool _isDraggingFile = false;
 
   @override
   void initState() {
@@ -699,6 +701,70 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
     );
   }
 
+  /// Handles file dropped via drag and drop
+  Future<void> _handleDroppedFile(String fileName, Uint8List bytes) async {
+    // Check file extension
+    final extension = fileName.split('.').last.toLowerCase();
+    if (!['pdf', 'docx', 'txt'].contains(extension)) {
+      _showErrorSnackBar('Unsupported file type. Use PDF, DOCX, or TXT.');
+      return;
+    }
+
+    setState(() => _isExtracting = true);
+
+    try {
+      final service = DocumentProcessorService();
+      final result = await service.extractTextFromBytes(bytes, fileName);
+
+      setState(() {
+        _selectedFileBytes = bytes;
+        _extractedDocument = result;
+        _isExtracting = false;
+      });
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Text extracted successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } on DocumentProcessingException catch (e) {
+      setState(() => _isExtracting = false);
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red, size: 28),
+                SizedBox(width: 8),
+                Text('Document Processing Error'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Text(e.message, style: const TextStyle(fontSize: 14)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isExtracting = false);
+      if (mounted) {
+        _showErrorSnackBar('Unexpected error: $e');
+      }
+    }
+  }
+
   /// Picks and extracts text from a document
   Future<void> _pickAndExtractDocument() async {
     setState(() => _isExtracting = true);
@@ -1148,71 +1214,137 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
     );
   }
 
-  /// Builds the upload button for document selection
+  /// Builds the upload button for document selection with drag & drop
   Widget _buildUploadButton() {
-    return GestureDetector(
-      onTap: _isExtracting ? null : _pickAndExtractDocument,
-      child: Container(
-        height: 200,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: _isExtracting ? Colors.blue : Colors.grey.shade300,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: _isExtracting ? Colors.blue.shade50 : Colors.grey.shade50,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_isExtracting)
-              Column(
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Extracting text from document...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.blue.shade900,
-                    ),
-                  ),
-                ],
-              )
-            else
-              Column(
-                children: [
-                  Icon(
-                    Icons.upload_file,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Upload Document',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'PDF, DOCX, or TXT',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _pickAndExtractDocument,
-                    icon: const Icon(Icons.folder_open),
-                    label: const Text('Choose File'),
-                  ),
-                ],
+    return DropTarget(
+      onDragEntered: (_) => setState(() => _isDraggingFile = true),
+      onDragExited: (_) => setState(() => _isDraggingFile = false),
+      onDragDone: (details) async {
+        setState(() => _isDraggingFile = false);
+        if (details.files.isNotEmpty) {
+          final file = details.files.first;
+          final bytes = await file.readAsBytes();
+          await _handleDroppedFile(file.name, bytes);
+        }
+      },
+      child: GestureDetector(
+        onTap: _isExtracting ? null : _pickAndExtractDocument,
+        child: MouseRegion(
+          cursor: _isExtracting
+              ? SystemMouseCursors.forbidden
+              : SystemMouseCursors.click,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 1.0, end: _isDraggingFile ? 1.02 : 1.0),
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOutCubic,
+            builder: (context, scale, child) => Transform.scale(
+              scale: scale,
+              child: child,
+            ),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              constraints: const BoxConstraints(minHeight: 200),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: _isDraggingFile
+                      ? Colors.blue.shade400
+                      : (_isExtracting ? Colors.blue : Colors.grey.shade300),
+                  width: _isDraggingFile ? 2.5 : 2,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                color: _isDraggingFile
+                    ? Colors.blue.shade50
+                    : (_isExtracting ? Colors.blue.shade50 : Colors.grey.shade50),
+                boxShadow: _isDraggingFile
+                    ? [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
-          ],
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isExtracting) ...[
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Extracting text from document...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.blue.shade900,
+                        ),
+                      ),
+                    ] else ...[
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: _isDraggingFile ? -8.0 : 0.0),
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, offset, child) => Transform.translate(
+                          offset: Offset(0, offset),
+                          child: Icon(
+                            _isDraggingFile ? Icons.file_download : Icons.cloud_upload_outlined,
+                            size: 56,
+                            color: _isDraggingFile ? Colors.blue.shade600 : Colors.grey.shade400,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 200),
+                        style: TextStyle(
+                          fontSize: _isDraggingFile ? 18 : 16,
+                          fontWeight: FontWeight.bold,
+                          color: _isDraggingFile ? Colors.blue.shade700 : Colors.grey.shade700,
+                        ),
+                        child: Text(
+                          _isDraggingFile
+                              ? 'Drop file here!'
+                              : 'Drag file here or click to browse',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: _isDraggingFile ? 0.0 : 1.0,
+                        child: Column(
+                          children: [
+                            Text(
+                              'Supported: PDF, DOCX, TXT',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: _pickAndExtractDocument,
+                              icon: const Icon(Icons.folder_open, size: 18),
+                              label: const Text('Choose File'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

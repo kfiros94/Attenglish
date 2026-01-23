@@ -82,6 +82,7 @@ dependencies:
   getwidget: ^7.0.0
   csv: ^6.0.0
   spreadsheet_decoder: ^2.3.0
+  desktop_drop: ^0.7.0
 
 dev_dependencies:
   flutter_test:
