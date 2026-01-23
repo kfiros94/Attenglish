@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
-import 'package:desktop_drop/desktop_drop.dart';
+import '../../../core/widgets/cross_platform_drop_zone.dart';
 import '../models/generation_config_model.dart';
 import '../models/ai_response_model.dart';
 import '../models/activity_result_model.dart';
@@ -1216,16 +1216,11 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
 
   /// Builds the upload button for document selection with drag & drop
   Widget _buildUploadButton() {
-    return DropTarget(
-      onDragEntered: (_) => setState(() => _isDraggingFile = true),
-      onDragExited: (_) => setState(() => _isDraggingFile = false),
-      onDragDone: (details) async {
-        setState(() => _isDraggingFile = false);
-        if (details.files.isNotEmpty) {
-          final file = details.files.first;
-          final bytes = await file.readAsBytes();
-          await _handleDroppedFile(file.name, bytes);
-        }
+    return CrossPlatformDropZone(
+      enabled: !_isExtracting,
+      onDragStateChanged: (isDragging) => setState(() => _isDraggingFile = isDragging),
+      onFileDrop: (fileName, bytes) async {
+        await _handleDroppedFile(fileName, bytes);
       },
       child: GestureDetector(
         onTap: _isExtracting ? null : _pickAndExtractDocument,

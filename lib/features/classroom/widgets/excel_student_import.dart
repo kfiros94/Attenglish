@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'dart:typed_data';
 import '../models/class_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/localization_service.dart';
+import '../../../core/widgets/cross_platform_drop_zone.dart';
 
 /// Student data parsed from Excel file
 class StudentImportData {
@@ -481,17 +481,12 @@ class _ExcelStudentImportDialogState extends State<ExcelStudentImportDialog> {
               ),
               const SizedBox(height: AppTheme.spacingMedium),
 
-              // Drag & Drop zone with smooth animations
-              DropTarget(
-                onDragEntered: (_) => setState(() => _isDragging = true),
-                onDragExited: (_) => setState(() => _isDragging = false),
-                onDragDone: (details) async {
-                  setState(() => _isDragging = false);
-                  if (details.files.isNotEmpty) {
-                    final file = details.files.first;
-                    final bytes = await file.readAsBytes();
-                    await _handleFile(file.name, bytes);
-                  }
+              // Drag & Drop zone with smooth animations (cross-platform)
+              CrossPlatformDropZone(
+                enabled: !_isLoading && !_isImporting,
+                onDragStateChanged: (isDragging) => setState(() => _isDragging = isDragging),
+                onFileDrop: (fileName, bytes) async {
+                  await _handleFile(fileName, bytes);
                 },
                 child: GestureDetector(
                   onTap: _isLoading || _isImporting ? null : _pickExcelFile,
