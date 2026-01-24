@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/services/localization_service.dart';
 
-/// Modern dashboard card with image for teacher interface
-/// Beautiful card design with image header
+/// Modern dashboard card with gradient illustration for teacher interface
+/// Implements Shneiderman's 8 Golden Rules:
+/// 1. Consistency: Uniform hover effects and visual style
+/// 2. Universal usability: Tooltips, Semantics labels, keyboard navigation
+/// 3. Informative feedback: Hover states, ripple effects, scale animation
+/// 5. Prevent errors: Clear visual affordances
+/// 8. Reduce memory load: Icons + text, visual grouping
 class DashboardCard extends StatefulWidget {
   final IconData icon;
   final Color iconColor;
@@ -10,8 +16,10 @@ class DashboardCard extends StatefulWidget {
   final String description;
   final String? badgeText;
   final VoidCallback onTap;
-  final String? imageUrl; // Optional image URL for the card
-  final LinearGradient? gradient; // Optional gradient overlay
+  final String? imageUrl;
+  final LinearGradient? gradient;
+  final List<Color>? gradientColors; // Custom gradient for illustration
+  final String? tooltipMessage; // Accessibility tooltip
 
   const DashboardCard({
     super.key,
@@ -23,13 +31,16 @@ class DashboardCard extends StatefulWidget {
     required this.onTap,
     this.imageUrl,
     this.gradient,
+    this.gradientColors,
+    this.tooltipMessage,
   });
 
   @override
   State<DashboardCard> createState() => _DashboardCardState();
 }
 
-class _DashboardCardState extends State<DashboardCard> with SingleTickerProviderStateMixin {
+class _DashboardCardState extends State<DashboardCard>
+    with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -41,8 +52,8 @@ class _DashboardCardState extends State<DashboardCard> with SingleTickerProvider
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.03).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
   }
 
@@ -52,221 +63,245 @@ class _DashboardCardState extends State<DashboardCard> with SingleTickerProvider
     super.dispose();
   }
 
+  /// Get the gradient for the card header
+  LinearGradient _getGradient() {
+    if (widget.gradient != null) return widget.gradient!;
+
+    if (widget.gradientColors != null && widget.gradientColors!.length >= 2) {
+      return LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: widget.gradientColors!,
+      );
+    }
+
+    // Default gradient based on icon color
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        widget.iconColor.withOpacity(0.9),
+        widget.iconColor.withOpacity(0.7),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) {
-        setState(() => _isHovered = true);
-        _controller.forward();
-      },
-      onExit: (_) {
-        setState(() => _isHovered = false);
-        _controller.reverse();
-      },
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: widget.iconColor.withOpacity(_isHovered ? 0.3 : 0.15),
-                blurRadius: _isHovered ? 20 : 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onTap,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+    final isRTL = LocalizationService.instance.isRTL;
+    final viewText = isRTL ? 'צפה' : 'View';
+
+    // Wrap in Tooltip and Semantics for accessibility (Rule 2)
+    Widget card = Semantics(
+      button: true,
+      label: widget.tooltipMessage ?? widget.title,
+      hint: widget.description,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) {
+          setState(() => _isHovered = true);
+          _controller.forward();
+        },
+        onExit: (_) {
+          setState(() => _isHovered = false);
+          _controller.reverse();
+        },
+        child: Focus(
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.iconColor.withOpacity(_isHovered ? 0.35 : 0.15),
+                    blurRadius: _isHovered ? 24 : 12,
+                    offset: Offset(0, _isHovered ? 8 : 5),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Image/Gradient header (top 40% of card)
-                      Expanded(
-                        flex: 4,
-                        child: Stack(
-                          children: [
-                            // Background image or gradient
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: widget.gradient ??
-                                    LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        widget.iconColor.withOpacity(0.8),
-                                        widget.iconColor.withOpacity(0.6),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: widget.onTap,
+                    splashColor: widget.iconColor.withOpacity(0.2),
+                    highlightColor: widget.iconColor.withOpacity(0.1),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Gradient illustration header (top 45%)
+                          Expanded(
+                            flex: 45,
+                            child: Stack(
+                              children: [
+                                // Beautiful gradient background
+                                Container(
+                                  decoration: BoxDecoration(
+                                    gradient: _getGradient(),
+                                  ),
+                                  child: widget.imageUrl != null
+                                      ? Image.network(
+                                          widget.imageUrl!,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(),
+                                        )
+                                      : null,
+                                ),
+
+                                // Decorative pattern overlay
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _CardPatternPainter(
+                                      color: Colors.white.withOpacity(0.1),
+                                    ),
+                                  ),
+                                ),
+
+                                // Large centered icon as illustration
+                                Center(
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: EdgeInsets.all(_isHovered ? 20 : 16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(_isHovered ? 0.25 : 0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      widget.icon,
+                                      size: _isHovered ? 48 : 44,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+
+                                // Badge
+                                if (widget.badgeText != null)
+                                  Positioned(
+                                    top: 12,
+                                    right: isRTL ? null : 12,
+                                    left: isRTL ? 12 : null,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.15),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Text(
+                                        widget.badgeText!,
+                                        style: TextStyle(
+                                          color: widget.iconColor,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+
+                          // Content section (bottom 55%)
+                          Expanded(
+                            flex: 55,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Title
+                                  Text(
+                                    widget.title,
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                      height: 1.2,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+
+                                  // Description
+                                  Expanded(
+                                    child: Text(
+                                      widget.description,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.textSecondary,
+                                        height: 1.4,
+                                      ),
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 10),
+
+                                  // Action button with RTL support (Rule 1: Consistency)
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: widget.iconColor.withOpacity(
+                                        _isHovered ? 0.15 : 0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          viewText,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: widget.iconColor,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Icon(
+                                          isRTL
+                                              ? Icons.arrow_back_rounded
+                                              : Icons.arrow_forward_rounded,
+                                          size: 16,
+                                          color: widget.iconColor,
+                                        ),
                                       ],
                                     ),
-                              ),
-                              child: widget.imageUrl != null
-                                  ? Image.network(
-                                      widget.imageUrl!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        // Fallback to gradient on error
-                                        return Container();
-                                      },
-                                    )
-                                  : null,
-                            ),
-
-                            // Gradient overlay for better text visibility
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.black.withOpacity(0.1),
-                                    Colors.black.withOpacity(0.3),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-
-                            // Badge
-                            if (widget.badgeText != null)
-                              Positioned(
-                                top: 12,
-                                right: 12,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    widget.badgeText!,
-                                    style: TextStyle(
-                                      color: widget.iconColor,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                            // Icon at bottom of image
-                            Positioned(
-                              bottom: 12,
-                              left: 16,
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  widget.icon,
-                                  color: widget.iconColor,
-                                  size: 28,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Content section (bottom 60% of card)
-                      Expanded(
-                        flex: 6,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Title
-                              Text(
-                                widget.title,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                  height: 1.2,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-
-                              // Description
-                              Expanded(
-                                child: Text(
-                                  widget.description,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textSecondary,
-                                    height: 1.4,
-                                  ),
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              // Action button
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: widget.iconColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'View',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: widget.iconColor,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Icon(
-                                      Icons.arrow_forward_rounded,
-                                      size: 16,
-                                      color: widget.iconColor,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -275,5 +310,50 @@ class _DashboardCardState extends State<DashboardCard> with SingleTickerProvider
         ),
       ),
     );
+
+    // Wrap with Tooltip if message provided (Rule 2: Universal Usability)
+    if (widget.tooltipMessage != null) {
+      return Tooltip(
+        message: widget.tooltipMessage!,
+        preferBelow: false,
+        child: card,
+      );
+    }
+
+    return card;
   }
+}
+
+/// Custom painter for decorative pattern on card header
+class _CardPatternPainter extends CustomPainter {
+  final Color color;
+
+  _CardPatternPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    // Draw decorative circles
+    canvas.drawCircle(
+      Offset(size.width * 0.85, size.height * 0.2),
+      size.width * 0.15,
+      paint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.1, size.height * 0.8),
+      size.width * 0.12,
+      paint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.7, size.height * 0.9),
+      size.width * 0.08,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

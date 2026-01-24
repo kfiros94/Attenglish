@@ -395,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: AppTheme.spacingMedium),
 
-        // Dashboard grid
+        // Dashboard grid with beautiful gradient cards
         LayoutBuilder(
           builder: (context, constraints) {
             final crossAxisCount = constraints.maxWidth > 800 ? 3 : 2;
@@ -407,15 +407,22 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisSpacing: AppTheme.spacingLarge,
               childAspectRatio: 0.85, // Taller cards for better image display
               children: [
-                // AI Generator card (NEW)
+                // AI Generator card (NEW) - Purple to Pink gradient
                 DashboardCard(
                   icon: Icons.auto_awesome,
                   iconColor: Colors.purple,
+                  gradientColors: [
+                    Colors.purple.shade600,
+                    Colors.pink.shade400,
+                  ],
                   title: isRTL ? 'מחולל AI' : 'AI Generator',
                   description: isRTL
                       ? 'צור פעילויות עם בינה מלאכותית'
                       : 'Generate activities with AI',
                   badgeText: isRTL ? 'חדש ✨' : 'NEW ✨',
+                  tooltipMessage: isRTL
+                      ? 'השתמש בבינה מלאכותית ליצירת פעילויות אוטומטית'
+                      : 'Use AI to automatically generate learning activities',
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -425,28 +432,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
 
-                // My Classrooms card
+                // My Classrooms card - Blue to Cyan gradient
                 DashboardCard(
                   icon: Icons.school,
                   iconColor: AppColors.primary,
+                  gradientColors: [
+                    Colors.blue.shade600,
+                    Colors.cyan.shade400,
+                  ],
                   title: isRTL ? 'הכיתות שלי' : 'My Classrooms',
                   description: isRTL
                       ? 'נהל את הכיתות והתלמידים שלך'
                       : 'Manage your classes and students',
+                  tooltipMessage: isRTL
+                      ? 'צפה ונהל את כל הכיתות והתלמידים שלך'
+                      : 'View and manage all your classrooms and students',
                   onTap: () {
                     Navigator.of(context).pushNamed('/classrooms');
                   },
                 ),
 
-                // Student Progress card
+                // Student Progress card - Green to Teal gradient
                 DashboardCard(
                   icon: Icons.analytics,
                   iconColor: AppColors.secondary,
+                  gradientColors: [
+                    Colors.green.shade600,
+                    Colors.teal.shade400,
+                  ],
                   title: isRTL ? 'התקדמות תלמידים' : 'Student Progress',
                   description: isRTL
                       ? 'צפה בדוחות והתקדמות'
                       : 'View reports and analytics',
                   badgeText: isRTL ? 'בקרוב' : 'Soon',
+                  tooltipMessage: isRTL
+                      ? 'עקוב אחר התקדמות התלמידים עם גרפים ודוחות'
+                      : 'Track student progress with charts and reports',
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -460,27 +481,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
 
-                // Create Lesson card
+                // Create Lesson card - Orange to Yellow gradient
                 DashboardCard(
                   icon: Icons.edit_note,
                   iconColor: AppColors.accent,
+                  gradientColors: [
+                    Colors.orange.shade600,
+                    Colors.amber.shade400,
+                  ],
                   title: isRTL ? 'צור שיעור' : 'Create Lesson',
                   description: isRTL
                       ? 'העלה תוכן חדש ושיעורים'
                       : 'Upload new content and lessons',
+                  tooltipMessage: isRTL
+                      ? 'צור שיעור חדש עם תוכן, תמונות ופעילויות'
+                      : 'Create a new lesson with content, images and activities',
                   onTap: () {
                     Navigator.of(context).pushNamed('/lessons/create');
                   },
                 ),
 
-                // Content Library card
+                // Content Library card - Indigo to Purple gradient
                 DashboardCard(
                   icon: Icons.library_books,
                   iconColor: Colors.deepPurple.shade300,
+                  gradientColors: [
+                    Colors.indigo.shade600,
+                    Colors.deepPurple.shade400,
+                  ],
                   title: isRTL ? 'ספריית תכנים' : 'Content Library',
                   description: isRTL
                       ? 'עיין בתכנים זמינים'
                       : 'Browse available content',
+                  tooltipMessage: isRTL
+                      ? 'גש לכל השיעורים והתכנים שיצרת'
+                      : 'Access all your created lessons and content',
                   onTap: () {
                     Navigator.of(context).pushNamed('/lessons/list');
                   },

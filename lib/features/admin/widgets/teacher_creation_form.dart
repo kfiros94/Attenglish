@@ -85,6 +85,8 @@ class _TeacherCreationFormState extends State<TeacherCreationForm> {
     final locale = LocalizationService.instance.currentLocale;
 
     return AlertDialog(
+      // Constrain dialog width for better UX (Shneiderman Rule 5: Prevent Errors)
+      constraints: const BoxConstraints(maxWidth: 480),
       title: Row(
         children: [
           Container(

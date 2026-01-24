@@ -84,6 +84,8 @@ class _ClassroomFormDialogState extends State<ClassroomFormDialog> {
     final isRTL = LocalizationService.instance.isRTL;
 
     return AlertDialog(
+      // Constrain dialog width for better UX (Shneiderman Rule 5: Prevent Errors)
+      constraints: const BoxConstraints(maxWidth: 450),
       title: Row(
         children: [
           Container(
@@ -99,12 +101,14 @@ class _ClassroomFormDialogState extends State<ClassroomFormDialog> {
             ),
           ),
           const SizedBox(width: AppTheme.spacingMedium),
-          Text(
-            isRTL ? 'יצירת כיתה חדשה' : 'Create New Classroom',
-            style: const TextStyle(
-              fontSize: AppTheme.fontSizeLarge,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          Expanded(
+            child: Text(
+              isRTL ? 'יצירת כיתה חדשה' : 'Create New Classroom',
+              style: const TextStyle(
+                fontSize: AppTheme.fontSizeLarge,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],

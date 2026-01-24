@@ -366,171 +366,189 @@ class _CreateLessonScreenState extends State<CreateLessonScreen> {
                         ),
                         const SizedBox(height: 32),
 
-                        // Title field
-                        TextFormField(
-                          controller: _titleController,
-                          decoration: const InputDecoration(
-                            labelText: 'Lesson Title *',
-                            hintText: 'e.g., Introduction to Present Tense',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.title),
-                          ),
-                          maxLength: 100,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter a title';
-                            }
-                            if (value.trim().length < 3) {
-                              return 'Title must be at least 3 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Description field
-                        TextFormField(
-                          controller: _descriptionController,
-                          decoration: const InputDecoration(
-                            labelText: 'Description (Optional)',
-                            hintText:
-                                'Brief description of what students will learn',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.description),
-                          ),
-                          maxLines: 3,
-                          maxLength: 300,
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Classroom dropdown
-                        DropdownButtonFormField<String>(
-                          value: _selectedClassId,
-                          decoration: const InputDecoration(
-                            labelText: 'Classroom *',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.class_),
-                          ),
-                          items: _teacherClasses.map((classroom) {
-                            return DropdownMenuItem(
-                              value: classroom.id,
-                              child: Text(classroom.name),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() => _selectedClassId = value);
-                          },
-                          validator: (value) {
-                            if (value == null) {
-                              return 'Please select a classroom';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Grade and Difficulty row
-                        Row(
-                          children: [
-                            // Grade dropdown
-                            Expanded(
-                              child: DropdownButtonFormField<int>(
-                                value: _selectedGrade,
-                                decoration: const InputDecoration(
-                                  labelText: 'Grade Level *',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.school),
-                                ),
-                                items: List.generate(12, (index) {
-                                  final grade = index + 1;
-                                  return DropdownMenuItem(
-                                    value: grade,
-                                    child: Text('Grade $grade'),
-                                  );
-                                }),
-                                onChanged: (value) {
-                                  setState(() => _selectedGrade = value);
-                                },
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Select grade';
-                                  }
-                                  return null;
-                                },
-                              ),
+                        // Title field (narrower - max 500px)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: TextFormField(
+                            controller: _titleController,
+                            decoration: const InputDecoration(
+                              labelText: 'Lesson Title *',
+                              hintText: 'e.g., Introduction to Present Tense',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.title),
                             ),
-                            const SizedBox(width: 16),
+                            maxLength: 100,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter a title';
+                              }
+                              if (value.trim().length < 3) {
+                                return 'Title must be at least 3 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 20),
 
-                            // Difficulty dropdown
-                            Expanded(
-                              child: DropdownButtonFormField<int>(
-                                value: _selectedDifficulty,
-                                decoration: const InputDecoration(
-                                  labelText: 'Difficulty *',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.signal_cellular_alt),
-                                ),
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: 1, child: Text('Easy')),
-                                  DropdownMenuItem(
-                                      value: 2, child: Text('Medium')),
-                                  DropdownMenuItem(
-                                      value: 3, child: Text('Hard')),
-                                  DropdownMenuItem(
-                                      value: 4, child: Text('Very Hard')),
-                                  DropdownMenuItem(
-                                      value: 5, child: Text('Expert')),
-                                ],
-                                onChanged: (value) {
-                                  setState(() => _selectedDifficulty = value);
-                                },
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Select difficulty';
-                                  }
-                                  return null;
-                                },
-                              ),
+                        // Description field (slightly wider - max 600px)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          child: TextFormField(
+                            controller: _descriptionController,
+                            decoration: const InputDecoration(
+                              labelText: 'Description (Optional)',
+                              hintText:
+                                  'Brief description of what students will learn',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.description),
                             ),
-                          ],
+                            maxLines: 3,
+                            maxLength: 300,
+                          ),
                         ),
                         const SizedBox(height: 20),
 
-                        // Topic field
-                        TextFormField(
-                          controller: _topicController,
-                          decoration: const InputDecoration(
-                            labelText: 'Topic (Optional)',
-                            hintText: 'e.g., Grammar, Vocabulary, Reading',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.topic),
+                        // Classroom dropdown (narrower - max 500px)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedClassId,
+                            decoration: const InputDecoration(
+                              labelText: 'Classroom *',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.class_),
+                            ),
+                            items: _teacherClasses.map((classroom) {
+                              return DropdownMenuItem(
+                                value: classroom.id,
+                                child: Text(classroom.name),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() => _selectedClassId = value);
+                            },
+                            validator: (value) {
+                              if (value == null) {
+                                return 'Please select a classroom';
+                              }
+                              return null;
+                            },
                           ),
-                          maxLength: 100,
                         ),
                         const SizedBox(height: 20),
 
-                        // Content field (large)
-                        TextFormField(
-                          controller: _contentController,
-                          decoration: const InputDecoration(
-                            labelText: 'Lesson Content *',
-                            hintText:
-                                'Write the main lesson content here...\n\nYou can include:\n- Explanations\n- Examples\n- Rules\n- Tips',
-                            border: OutlineInputBorder(),
-                            alignLabelWithHint: true,
+                        // Grade and Difficulty row (narrower - max 500px total)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: Row(
+                            children: [
+                              // Grade dropdown
+                              Expanded(
+                                child: DropdownButtonFormField<int>(
+                                  value: _selectedGrade,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Grade Level *',
+                                    border: OutlineInputBorder(),
+                                    prefixIcon: Icon(Icons.school),
+                                  ),
+                                  items: List.generate(12, (index) {
+                                    final grade = index + 1;
+                                    return DropdownMenuItem(
+                                      value: grade,
+                                      child: Text('Grade $grade'),
+                                    );
+                                  }),
+                                  onChanged: (value) {
+                                    setState(() => _selectedGrade = value);
+                                  },
+                                  validator: (value) {
+                                    if (value == null) {
+                                      return 'Select grade';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+
+                              // Difficulty dropdown
+                              Expanded(
+                                child: DropdownButtonFormField<int>(
+                                  value: _selectedDifficulty,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Difficulty *',
+                                    border: OutlineInputBorder(),
+                                    prefixIcon: Icon(Icons.signal_cellular_alt),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(
+                                        value: 1, child: Text('Easy')),
+                                    DropdownMenuItem(
+                                        value: 2, child: Text('Medium')),
+                                    DropdownMenuItem(
+                                        value: 3, child: Text('Hard')),
+                                    DropdownMenuItem(
+                                        value: 4, child: Text('Very Hard')),
+                                    DropdownMenuItem(
+                                        value: 5, child: Text('Expert')),
+                                  ],
+                                  onChanged: (value) {
+                                    setState(() => _selectedDifficulty = value);
+                                  },
+                                  validator: (value) {
+                                    if (value == null) {
+                                      return 'Select difficulty';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                          maxLines: 15,
-                          minLines: 10,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter lesson content';
-                            }
-                            if (value.trim().length < 10) {
-                              return 'Content must be at least 10 characters';
-                            }
-                            return null;
-                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Topic field (narrower - max 500px)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: TextFormField(
+                            controller: _topicController,
+                            decoration: const InputDecoration(
+                              labelText: 'Topic (Optional)',
+                              hintText: 'e.g., Grammar, Vocabulary, Reading',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.topic),
+                            ),
+                            maxLength: 100,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Content field (full width - max 700px for large content)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 700),
+                          child: TextFormField(
+                            controller: _contentController,
+                            decoration: const InputDecoration(
+                              labelText: 'Lesson Content *',
+                              hintText:
+                                  'Write the main lesson content here...\n\nYou can include:\n- Explanations\n- Examples\n- Rules\n- Tips',
+                              border: OutlineInputBorder(),
+                              alignLabelWithHint: true,
+                            ),
+                            maxLines: 15,
+                            minLines: 10,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter lesson content';
+                              }
+                              if (value.trim().length < 10) {
+                                return 'Content must be at least 10 characters';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
                         const SizedBox(height: 32),
 
