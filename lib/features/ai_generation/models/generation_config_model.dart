@@ -28,6 +28,12 @@ class GenerationConfig {
   /// Number of image description activities to generate
   final int imageDescriptionCount;
 
+  /// Number of cloze (fill-in-the-blank from story) activities to generate
+  final int clozeCount;
+
+  /// Number of open-ended reading comprehension questions to generate
+  final int openEndedCount;
+
   /// Language for activities: "english", "hebrew", or "both"
   final String language;
 
@@ -80,6 +86,8 @@ class GenerationConfig {
     this.trueFalseCount = 3,
     this.dragDropCount = 2,
     this.imageDescriptionCount = 0,
+    this.clozeCount = 0,
+    this.openEndedCount = 0,
     this.language = 'english',
     this.includeVocabulary = true,
     this.adhdFriendly = true,
@@ -92,7 +100,9 @@ class GenerationConfig {
       fillBlankCount +
       trueFalseCount +
       dragDropCount +
-      imageDescriptionCount;
+      imageDescriptionCount +
+      clozeCount +
+      openEndedCount;
 
   /// Validates the configuration
   ///
@@ -159,6 +169,18 @@ class GenerationConfig {
       );
     }
 
+    if (clozeCount < 0) {
+      throw ArgumentError(
+        'Cloze count must be >= 0, got: $clozeCount',
+      );
+    }
+
+    if (openEndedCount < 0) {
+      throw ArgumentError(
+        'Open-ended count must be >= 0, got: $openEndedCount',
+      );
+    }
+
     // Validate total activities
     if (totalActivities == 0) {
       throw ArgumentError(
@@ -185,6 +207,8 @@ class GenerationConfig {
         'trueFalse': trueFalseCount,
         'dragDrop': dragDropCount,
         'imageDescription': imageDescriptionCount,
+        'cloze': clozeCount,
+        'openEnded': openEndedCount,
       },
       'language': language,
       'includeVocabulary': includeVocabulary,
@@ -222,6 +246,8 @@ class GenerationConfig {
       trueFalseCount: activityCounts['trueFalse'] as int? ?? 3,
       dragDropCount: activityCounts['dragDrop'] as int? ?? 2,
       imageDescriptionCount: activityCounts['imageDescription'] as int? ?? 0,
+      clozeCount: activityCounts['cloze'] as int? ?? 0,
+      openEndedCount: activityCounts['openEnded'] as int? ?? 0,
       language: json['language'] as String? ?? 'english',
       includeVocabulary: json['includeVocabulary'] as bool? ?? true,
       adhdFriendly: json['adhdFriendly'] as bool? ?? true,
@@ -246,6 +272,8 @@ class GenerationConfig {
     int? trueFalseCount,
     int? dragDropCount,
     int? imageDescriptionCount,
+    int? clozeCount,
+    int? openEndedCount,
     String? language,
     bool? includeVocabulary,
     bool? adhdFriendly,
@@ -259,6 +287,8 @@ class GenerationConfig {
       trueFalseCount: trueFalseCount ?? this.trueFalseCount,
       dragDropCount: dragDropCount ?? this.dragDropCount,
       imageDescriptionCount: imageDescriptionCount ?? this.imageDescriptionCount,
+      clozeCount: clozeCount ?? this.clozeCount,
+      openEndedCount: openEndedCount ?? this.openEndedCount,
       language: language ?? this.language,
       includeVocabulary: includeVocabulary ?? this.includeVocabulary,
       adhdFriendly: adhdFriendly ?? this.adhdFriendly,
@@ -329,6 +359,8 @@ class GenerationConfig {
         other.trueFalseCount == trueFalseCount &&
         other.dragDropCount == dragDropCount &&
         other.imageDescriptionCount == imageDescriptionCount &&
+        other.clozeCount == clozeCount &&
+        other.openEndedCount == openEndedCount &&
         other.language == language &&
         other.includeVocabulary == includeVocabulary &&
         other.adhdFriendly == adhdFriendly;
@@ -345,6 +377,8 @@ class GenerationConfig {
       trueFalseCount,
       dragDropCount,
       imageDescriptionCount,
+      clozeCount,
+      openEndedCount,
       language,
       includeVocabulary,
       adhdFriendly,

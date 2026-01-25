@@ -115,6 +115,8 @@ ACTIVITY BREAKDOWN:
 4. True/False: ${config.trueFalseCount} questions
 5. Drag & Drop (Matching): ${config.dragDropCount} questions
 6. Image Description: ${config.imageDescriptionCount} questions (teacher will add images later)
+7. Cloze Question: ${config.clozeCount} questions (fill-in-the-blank based on story context - AI evaluated)
+8. Open-ended Question: ${config.openEndedCount} questions (reading comprehension - AI evaluated)
 
 TARGET GRADE: ${config.gradeLevel}
 ${_getGradeSpecificGuidelines(config.gradeLevel, config.difficulty)}
@@ -160,8 +162,26 @@ IMPORTANT RULES:
    - Example sampleAnswer: "I see children playing on swings in a sunny park. There are trees and a blue sky."
    - Points: 20 (AI will grade based on accuracy, grammar, vocabulary)
 
+8. For Cloze Question (Fill-in-blank from story):
+   - Include the full story/passage context in "storyContext" field
+   - The question should have _____ indicating where the blank is
+   - Provide the expected answer(s) - can include multiple acceptable answers separated by comma
+   - The blank should be a meaningful word from the story context
+   - AI will evaluate student answers based on context
+   - Points: 10-15 (AI evaluates)
+   - Example: Based on story about a boy going to school, question: "The boy walked to the _____ every morning."
+
+9. For Open-ended Question (Reading comprehension):
+   - Include the full story/passage in "storyContext" field
+   - Ask a comprehension question that requires 2-3 sentence answer
+   - Questions should test understanding, not just memory
+   - Can ask about: main idea, character motivation, cause/effect, inference
+   - AI will evaluate student answers for comprehension and expression
+   - Points: 15-20 (AI evaluates)
+   - Example: "Why do you think the character made that decision?"
+
 ${config.includeVocabulary ? '''
-7. VOCABULARY EXTRACTION:
+10. VOCABULARY EXTRACTION:
    - Extract 8-10 key vocabulary words from the text
    - Provide simple definition (one sentence, grade-appropriate)
    - Include Hebrew translation
@@ -216,6 +236,22 @@ Respond with ONLY valid JSON. No markdown, no code blocks, no explanations.
       "instructions": "Teacher: Upload an image showing children playing in a park",
       "sampleAnswer": "I see children playing on swings in a sunny park. There are trees and a blue sky with some clouds.",
       "points": 20
+    },
+    {
+      "type": "cloze",
+      "question": "The boy walked to the _____ every morning.",
+      "storyContext": "Every day, Tom woke up early. He ate breakfast with his family. Then, the boy walked to the school every morning. He liked to see his friends there.",
+      "expectedAnswer": "school",
+      "instructions": "Fill in the blank based on the story above.",
+      "points": 10
+    },
+    {
+      "type": "open_ended",
+      "question": "Why do you think Tom liked going to school?",
+      "storyContext": "Every day, Tom woke up early. He ate breakfast with his family. Then, the boy walked to the school every morning. He liked to see his friends there. They played games together during break time.",
+      "expectedAnswer": "Tom liked going to school because he could see his friends there and play games with them during break time.",
+      "instructions": "Write 2-3 sentences explaining your answer based on the story.",
+      "points": 15
     }
   ],
   "vocabulary": [

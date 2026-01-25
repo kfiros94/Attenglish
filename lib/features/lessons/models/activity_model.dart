@@ -1,8 +1,10 @@
 /// Activity/Exercise model for lessons
-/// Supports multiple types: multiple choice, fill blank, drag & drop, true/false, image_description
+/// Supports multiple types: multiple choice, fill blank, drag & drop, true/false,
+/// image_description, cloze, open_ended
 class ActivityModel {
   final String id;
-  final String type; // 'multiple_choice', 'fill_blank', 'true_false', 'drag_drop', 'image_description'
+  final String type; // 'multiple_choice', 'fill_blank', 'true_false', 'drag_drop',
+                     // 'image_description', 'cloze', 'open_ended'
   final String question;
   final String? instructions; // optional helper text
 
@@ -27,6 +29,11 @@ class ActivityModel {
   final List<String>? imageUrls; // Firebase Storage URLs of images (1-3 images)
   final String? sampleAnswer; // Optional: teacher's sample description for reference
 
+  // For cloze and open_ended questions (AI-evaluated based on story):
+  final String? storyContext; // The story/passage the question is based on
+  final String? expectedAnswer; // For cloze: expected answer(s), for open_ended: sample answer
+  final bool? aiEvaluated; // Whether this activity uses AI for evaluation
+
   final int points; // points awarded for correct answer
 
   const ActivityModel({
@@ -45,6 +52,9 @@ class ActivityModel {
     this.correctAnswer,
     this.imageUrls,
     this.sampleAnswer,
+    this.storyContext,
+    this.expectedAnswer,
+    this.aiEvaluated,
     this.points = 10,
   });
 
@@ -78,6 +88,9 @@ class ActivityModel {
           ?.map((e) => e as String)
           .toList(),
       sampleAnswer: json['sampleAnswer'] as String?,
+      storyContext: json['storyContext'] as String?,
+      expectedAnswer: json['expectedAnswer'] as String?,
+      aiEvaluated: json['aiEvaluated'] as bool?,
       points: json['points'] as int? ?? 10,
     );
   }
@@ -100,6 +113,9 @@ class ActivityModel {
       if (correctAnswer != null) 'correctAnswer': correctAnswer,
       if (imageUrls != null) 'imageUrls': imageUrls,
       if (sampleAnswer != null) 'sampleAnswer': sampleAnswer,
+      if (storyContext != null) 'storyContext': storyContext,
+      if (expectedAnswer != null) 'expectedAnswer': expectedAnswer,
+      if (aiEvaluated != null) 'aiEvaluated': aiEvaluated,
       'points': points,
     };
   }
@@ -121,6 +137,9 @@ class ActivityModel {
     bool? correctAnswer,
     List<String>? imageUrls,
     String? sampleAnswer,
+    String? storyContext,
+    String? expectedAnswer,
+    bool? aiEvaluated,
     int? points,
   }) {
     return ActivityModel(
@@ -139,6 +158,9 @@ class ActivityModel {
       correctAnswer: correctAnswer ?? this.correctAnswer,
       imageUrls: imageUrls ?? this.imageUrls,
       sampleAnswer: sampleAnswer ?? this.sampleAnswer,
+      storyContext: storyContext ?? this.storyContext,
+      expectedAnswer: expectedAnswer ?? this.expectedAnswer,
+      aiEvaluated: aiEvaluated ?? this.aiEvaluated,
       points: points ?? this.points,
     );
   }
@@ -156,6 +178,10 @@ class ActivityModel {
         return 'True/False';
       case 'image_description':
         return 'Image Description';
+      case 'cloze':
+        return 'Cloze Question';
+      case 'open_ended':
+        return 'Open-ended Question';
       default:
         return 'Unknown';
     }
@@ -174,6 +200,10 @@ class ActivityModel {
         return '🎯';
       case 'image_description':
         return '🖼️';
+      case 'cloze':
+        return '📖';
+      case 'open_ended':
+        return '💭';
       default:
         return '❓';
     }

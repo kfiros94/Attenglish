@@ -177,6 +177,12 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
       case 'drag_drop':
         editedActivity = await _showEditDragDropDialog(activity);
         break;
+      case 'cloze':
+        editedActivity = await _showEditClozeDialog(activity);
+        break;
+      case 'open_ended':
+        editedActivity = await _showEditOpenEndedDialog(activity);
+        break;
     }
 
     // Update activity if edited
@@ -590,6 +596,213 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
                 leftItems: leftItems,
                 rightItems: rightItems,
                 correctPairs: correctPairs,
+                points: int.tryParse(pointsController.text) ?? activity.points,
+              );
+              Navigator.pop(context, edited);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shows edit dialog for cloze activity
+  Future<ActivityModel?> _showEditClozeDialog(ActivityModel activity) async {
+    final questionController = TextEditingController(text: activity.question);
+    final storyContextController = TextEditingController(text: activity.storyContext ?? '');
+    final expectedAnswerController = TextEditingController(text: activity.expectedAnswer ?? '');
+    final instructionsController = TextEditingController(text: activity.instructions ?? '');
+    final pointsController = TextEditingController(text: activity.points.toString());
+
+    return showDialog<ActivityModel>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Cloze Question'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: questionController,
+                decoration: const InputDecoration(
+                  labelText: 'Question',
+                  border: OutlineInputBorder(),
+                  helperText: 'The cloze passage with blanks (use ___ for blanks)',
+                ),
+                maxLines: 4,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: storyContextController,
+                decoration: const InputDecoration(
+                  labelText: 'Story Context (optional)',
+                  border: OutlineInputBorder(),
+                  helperText: 'Background context for the question',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: expectedAnswerController,
+                decoration: const InputDecoration(
+                  labelText: 'Expected Answer',
+                  border: OutlineInputBorder(),
+                  helperText: 'The answer(s) that should fill the blanks',
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: instructionsController,
+                decoration: const InputDecoration(
+                  labelText: 'Instructions (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: pointsController,
+                decoration: const InputDecoration(
+                  labelText: 'Points',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.psychology, size: 20, color: Colors.indigo.shade700),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'This activity is evaluated by AI',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final edited = activity.copyWith(
+                question: questionController.text,
+                storyContext: storyContextController.text.isEmpty ? null : storyContextController.text,
+                expectedAnswer: expectedAnswerController.text.isEmpty ? null : expectedAnswerController.text,
+                instructions: instructionsController.text.isEmpty ? null : instructionsController.text,
+                points: int.tryParse(pointsController.text) ?? activity.points,
+              );
+              Navigator.pop(context, edited);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shows edit dialog for open-ended activity
+  Future<ActivityModel?> _showEditOpenEndedDialog(ActivityModel activity) async {
+    final questionController = TextEditingController(text: activity.question);
+    final instructionsController = TextEditingController(text: activity.instructions ?? '');
+    final expectedAnswerController = TextEditingController(text: activity.expectedAnswer ?? '');
+    final pointsController = TextEditingController(text: activity.points.toString());
+
+    return showDialog<ActivityModel>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Open-ended Question'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: questionController,
+                decoration: const InputDecoration(
+                  labelText: 'Question',
+                  border: OutlineInputBorder(),
+                  helperText: 'The open-ended question for students',
+                ),
+                maxLines: 4,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: instructionsController,
+                decoration: const InputDecoration(
+                  labelText: 'Instructions (optional)',
+                  border: OutlineInputBorder(),
+                  helperText: 'Additional instructions for students',
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: expectedAnswerController,
+                decoration: const InputDecoration(
+                  labelText: 'Expected Answer / Rubric',
+                  border: OutlineInputBorder(),
+                  helperText: 'Key points or sample answer for AI evaluation',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: pointsController,
+                decoration: const InputDecoration(
+                  labelText: 'Points',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.psychology, size: 20, color: Colors.teal.shade700),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'This activity is evaluated by AI',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final edited = activity.copyWith(
+                question: questionController.text,
+                instructions: instructionsController.text.isEmpty ? null : instructionsController.text,
+                expectedAnswer: expectedAnswerController.text.isEmpty ? null : expectedAnswerController.text,
                 points: int.tryParse(pointsController.text) ?? activity.points,
               );
               Navigator.pop(context, edited);
@@ -1124,6 +1337,16 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
                     label: Text('Drag & Drop: ${_getCountByType('drag_drop')}'),
                     avatar: const Icon(Icons.swap_horiz, size: 16),
                   ),
+                if (_getCountByType('cloze') > 0)
+                  Chip(
+                    label: Text('Cloze: ${_getCountByType('cloze')}'),
+                    avatar: const Icon(Icons.menu_book, size: 16),
+                  ),
+                if (_getCountByType('open_ended') > 0)
+                  Chip(
+                    label: Text('Open-ended: ${_getCountByType('open_ended')}'),
+                    avatar: const Icon(Icons.psychology, size: 16),
+                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -1182,6 +1405,20 @@ class _ReviewActivitiesScreenState extends State<ReviewActivitiesScreen> {
             selected: _filterType == 'drag_drop',
             onSelected: (selected) {
               setState(() => _filterType = 'drag_drop');
+            },
+          ),
+          FilterChip(
+            label: const Text('Cloze'),
+            selected: _filterType == 'cloze',
+            onSelected: (selected) {
+              setState(() => _filterType = 'cloze');
+            },
+          ),
+          FilterChip(
+            label: const Text('Open-ended'),
+            selected: _filterType == 'open_ended',
+            onSelected: (selected) {
+              setState(() => _filterType = 'open_ended');
             },
           ),
         ],
@@ -1326,6 +1563,10 @@ class ActivityReviewCard extends StatelessWidget {
         return Icons.swap_horiz;
       case 'image_description':
         return Icons.image;
+      case 'cloze':
+        return Icons.menu_book;
+      case 'open_ended':
+        return Icons.psychology;
       default:
         return Icons.help_outline;
     }
@@ -1344,6 +1585,10 @@ class ActivityReviewCard extends StatelessWidget {
         return Colors.purple;
       case 'image_description':
         return Colors.deepPurple;
+      case 'cloze':
+        return Colors.indigo;
+      case 'open_ended':
+        return Colors.teal;
       default:
         return Colors.grey;
     }
@@ -1362,6 +1607,10 @@ class ActivityReviewCard extends StatelessWidget {
         return 'Drag & Drop';
       case 'image_description':
         return 'Image Description';
+      case 'cloze':
+        return 'Cloze Question';
+      case 'open_ended':
+        return 'Open-ended Question';
       default:
         return type;
     }
@@ -1452,6 +1701,10 @@ class ActivityReviewCard extends StatelessWidget {
         return _buildDragDropDetails(context);
       case 'image_description':
         return _buildImageDescriptionDetails(context);
+      case 'cloze':
+        return _buildClozeDetails(context);
+      case 'open_ended':
+        return _buildOpenEndedDetails(context);
       default:
         return const SizedBox.shrink();
     }
@@ -1690,6 +1943,114 @@ class ActivityReviewCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               activity.sampleAnswer!,
+              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Builds cloze activity details
+  Widget _buildClozeDetails(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.indigo.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (activity.storyContext != null) ...[
+            const Text(
+              'Story Context:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              activity.storyContext!,
+              style: TextStyle(fontSize: 12, color: Colors.indigo.shade700),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            children: [
+              Icon(Icons.psychology, size: 16, color: Colors.indigo.shade700),
+              const SizedBox(width: 4),
+              const Text(
+                'AI Evaluated',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          if (activity.expectedAnswer != null) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Expected Answer:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              activity.expectedAnswer!,
+              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Builds open-ended activity details
+  Widget _buildOpenEndedDetails(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.teal.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (activity.instructions != null) ...[
+            const Text(
+              'Instructions:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              activity.instructions!,
+              style: TextStyle(fontSize: 12, color: Colors.teal.shade700),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            children: [
+              Icon(Icons.psychology, size: 16, color: Colors.teal.shade700),
+              const SizedBox(width: 4),
+              const Text(
+                'AI Evaluated',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          if (activity.expectedAnswer != null) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Expected Answer:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              activity.expectedAnswer!,
               style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

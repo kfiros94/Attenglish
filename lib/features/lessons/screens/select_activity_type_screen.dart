@@ -5,6 +5,8 @@ import 'add_fill_blank_screen.dart';
 import 'add_true_false_screen.dart';
 import 'add_image_description_screen.dart';
 import 'create_drag_drop_screen.dart';
+import 'add_cloze_screen.dart';
+import 'add_open_ended_screen.dart';
 import '../../ai_generation/screens/ai_generator_screen.dart';
 import '../../ai_generation/models/activity_result_model.dart';
 
@@ -123,6 +125,50 @@ class SelectActivityTypeScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const CreateDragDropScreen(),
+                  ),
+                );
+                if (result != null && result is ActivityModel) {
+                  Navigator.pop(context, result);
+                }
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            // Cloze Question Card
+            _buildActivityTypeCard(
+              context: context,
+              icon: Icons.menu_book,
+              iconColor: Colors.indigo,
+              title: 'Cloze Question',
+              subtitle: 'Fill-in-the-blank from story - AI evaluates',
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddClozeScreen(),
+                  ),
+                );
+                if (result != null && result is ActivityModel) {
+                  Navigator.pop(context, result);
+                }
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            // Open-ended Question Card
+            _buildActivityTypeCard(
+              context: context,
+              icon: Icons.psychology,
+              iconColor: Colors.deepPurple,
+              title: 'Open-ended Question',
+              subtitle: 'Reading comprehension - AI evaluates',
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddOpenEndedScreen(),
                   ),
                 );
                 if (result != null && result is ActivityModel) {

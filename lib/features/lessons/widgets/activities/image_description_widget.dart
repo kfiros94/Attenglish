@@ -26,6 +26,10 @@ class _ImageDescriptionWidgetState extends State<ImageDescriptionWidget> {
   bool _isEvaluating = false;
   Map<String, dynamic>? _evaluation;
   int _earnedPoints = 0;
+  bool _showFeedback = false; // Controls whether detailed feedback is visible
+
+  // Minimum percentage of points required to count as "correct" completion
+  static const double _minimumPassPercentage = 0.5; // 50%
 
   @override
   void dispose() {
@@ -57,15 +61,21 @@ class _ImageDescriptionWidgetState extends State<ImageDescriptionWidget> {
         widget.activity.sampleAnswer,
       );
 
+      final points = evaluation['points'] as int;
+      final passThreshold = (widget.activity.points * _minimumPassPercentage).round();
+      final isCorrect = points >= passThreshold;
+
       setState(() {
         _hasChecked = true;
         _isEvaluating = false;
         _evaluation = evaluation;
-        _earnedPoints = evaluation['points'] as int;
+        _earnedPoints = points;
+        _showFeedback = false; // Don't show feedback automatically
       });
 
-      // Notify parent
-      widget.onAnswered(true, _earnedPoints);
+      // Notify parent - only award points if student met the minimum threshold
+      // If they didn't describe well (below 50%), they don't get completion XP
+      widget.onAnswered(isCorrect, isCorrect ? _earnedPoints : 0);
     } catch (e) {
       setState(() {
         _isEvaluating = false;
@@ -308,101 +318,266 @@ IMPORTANT:
             ),
           ),
 
-        // Evaluation Feedback
+        // Evaluation Results
         if (_hasChecked && _evaluation != null) ...[
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.purple.shade50,
-                  Colors.blue.shade50,
-                ],
+
+          // Score Summary Card
+          _buildScoreSummaryCard(),
+
+          const SizedBox(height: 16),
+
+          // See Feedback Button
+          if (!_showFeedback)
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _showFeedback = true;
+                });
+              },
+              icon: const Icon(Icons.feedback),
+              label: const Text('See Feedback'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple.shade100,
+                foregroundColor: Colors.purple.shade800,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.purple.shade300, width: 2),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Points Earned
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.purple,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.stars, color: Colors.amber, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            '$_earnedPoints / ${widget.activity.points} points',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+
+          // Detailed Feedback (shown after clicking "See Feedback")
+          if (_showFeedback) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.purple.shade50,
+                    Colors.blue.shade50,
                   ],
                 ),
-                const SizedBox(height: 16),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.purple.shade300, width: 2),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Icon(Icons.rate_review, color: Colors.purple.shade700, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Detailed Feedback',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
 
-                // Overall Feedback
-                _buildFeedbackSection(
-                  icon: Icons.celebration,
-                  title: 'Feedback',
-                  content: _evaluation!['feedback'] as String,
-                  color: Colors.purple,
-                ),
-                const SizedBox(height: 12),
+                  // Overall Feedback
+                  _buildFeedbackSection(
+                    icon: Icons.celebration,
+                    title: 'Feedback',
+                    content: _evaluation!['feedback'] as String,
+                    color: Colors.purple,
+                  ),
+                  const SizedBox(height: 12),
 
-                // Accuracy
-                _buildFeedbackSection(
-                  icon: Icons.check_circle_outline,
-                  title: 'Accuracy',
-                  content: _evaluation!['accuracy'] as String,
-                  color: Colors.green,
-                ),
-                const SizedBox(height: 12),
+                  // Accuracy
+                  _buildFeedbackSection(
+                    icon: Icons.check_circle_outline,
+                    title: 'Accuracy',
+                    content: _evaluation!['accuracy'] as String,
+                    color: Colors.green,
+                  ),
+                  const SizedBox(height: 12),
 
-                // Grammar
-                _buildFeedbackSection(
-                  icon: Icons.spellcheck,
-                  title: 'Grammar',
-                  content: _evaluation!['grammar'] as String,
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 12),
+                  // Grammar
+                  _buildFeedbackSection(
+                    icon: Icons.spellcheck,
+                    title: 'Grammar',
+                    content: _evaluation!['grammar'] as String,
+                    color: Colors.blue,
+                  ),
+                  const SizedBox(height: 12),
 
-                // Vocabulary
-                _buildFeedbackSection(
-                  icon: Icons.menu_book,
-                  title: 'Vocabulary',
-                  content: _evaluation!['vocabulary'] as String,
-                  color: Colors.orange,
-                ),
-                const SizedBox(height: 12),
+                  // Vocabulary
+                  _buildFeedbackSection(
+                    icon: Icons.menu_book,
+                    title: 'Vocabulary',
+                    content: _evaluation!['vocabulary'] as String,
+                    color: Colors.orange,
+                  ),
+                  const SizedBox(height: 12),
 
-                // Suggestions
-                _buildFeedbackSection(
-                  icon: Icons.lightbulb_outline,
-                  title: 'Suggestions',
-                  content: _evaluation!['suggestions'] as String,
-                  color: Colors.amber.shade700,
+                  // Suggestions
+                  _buildFeedbackSection(
+                    icon: Icons.lightbulb_outline,
+                    title: 'Suggestions',
+                    content: _evaluation!['suggestions'] as String,
+                    color: Colors.amber.shade700,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildScoreSummaryCard() {
+    final passThreshold = (widget.activity.points * _minimumPassPercentage).round();
+    final passed = _earnedPoints >= passThreshold;
+    final percentage = (_earnedPoints / widget.activity.points * 100).round();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: passed
+              ? [Colors.green.shade50, Colors.teal.shade50]
+              : [Colors.orange.shade50, Colors.red.shade50],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: passed ? Colors.green.shade400 : Colors.orange.shade400,
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          // Result Icon and Status
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                passed ? Icons.check_circle : Icons.info,
+                color: passed ? Colors.green : Colors.orange,
+                size: 48,
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    passed ? 'Great Job!' : 'Keep Trying!',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: passed ? Colors.green.shade700 : Colors.orange.shade700,
+                    ),
+                  ),
+                  Text(
+                    passed
+                        ? 'You described the image well!'
+                        : 'Your description needs more detail.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: passed ? Colors.green.shade600 : Colors.orange.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Points Display
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: passed ? Colors.green : Colors.orange,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.stars, color: Colors.amber, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  '$_earnedPoints / ${widget.activity.points} points ($percentage%)',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
               ],
             ),
           ),
+
+          // XP message
+          const SizedBox(height: 12),
+          Text(
+            passed
+                ? '+$_earnedPoints XP earned!'
+                : 'No XP earned - try to describe images more carefully next time!',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: passed ? Colors.green.shade700 : Colors.orange.shade700,
+            ),
+          ),
+
+          // Progress bar
+          const SizedBox(height: 16),
+          Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Score',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  Text(
+                    '$percentage%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: passed ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: _earnedPoints / widget.activity.points,
+                  backgroundColor: Colors.grey.shade300,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    passed ? Colors.green : Colors.orange,
+                  ),
+                  minHeight: 10,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Minimum ${(passThreshold)} points needed to pass',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
         ],
-      ],
+      ),
     );
   }
 

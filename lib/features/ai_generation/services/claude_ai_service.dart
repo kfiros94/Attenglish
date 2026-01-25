@@ -537,6 +537,30 @@ class ClaudeAiService {
           points: json['points'] as int? ?? 20,
         );
 
+      case 'cloze':
+        return ActivityModel(
+          id: id,
+          type: type,
+          question: json['question'] as String,
+          storyContext: json['storyContext'] as String?,
+          expectedAnswer: json['expectedAnswer'] as String?,
+          instructions: json['instructions'] as String?,
+          aiEvaluated: true,
+          points: json['points'] as int? ?? 10,
+        );
+
+      case 'open_ended':
+        return ActivityModel(
+          id: id,
+          type: type,
+          question: json['question'] as String,
+          storyContext: json['storyContext'] as String?,
+          expectedAnswer: json['expectedAnswer'] as String?,
+          instructions: json['instructions'] as String?,
+          aiEvaluated: true,
+          points: json['points'] as int? ?? 15,
+        );
+
       default:
         throw AiGenerationException('Unknown activity type: $type');
     }
@@ -642,6 +666,80 @@ class ClaudeAiService {
     } catch (e, stackTrace) {
       throw AiGenerationException(
         'Failed to evaluate image description: ${e.toString()}',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Evaluates a student's text-based answer using Claude AI
+  ///
+  /// This method is used for Cloze Questions and Open-ended Questions.
+  /// It evaluates the student's answer based on the story/passage context.
+  ///
+  /// Parameters:
+  /// - [storyContext]: The story/passage the question is based on
+  /// - [question]: The question asked
+  /// - [studentAnswer]: The student's answer
+  /// - [activityType]: Either 'cloze' or 'open_ended'
+  /// - [maxPoints]: Maximum points available for this activity
+  /// - [correctAnswer]: For cloze questions, the expected answer(s)
+  ///
+  /// Returns Map containing:
+  /// - points: int (0 to maxPoints)
+  /// - isCorrect: bool
+  /// - feedback: String (encouraging feedback)
+  /// - explanation: String (why the answer is correct/incorrect)
+  /// - suggestions: String (improvement tips)
+  ///
+  /// Throws [AiGenerationException] if evaluation fails
+  Future<Map<String, dynamic>> evaluateTextAnswer({
+    required String storyContext,
+    required String question,
+    required String studentAnswer,
+    required String activityType,
+    required int maxPoints,
+    String? correctAnswer,
+  }) async {
+    try {
+      // Use Firebase Cloud Function to proxy the API call
+      final functions = FirebaseFunctions.instance;
+
+      final result = await functions.httpsCallable('evaluateTextAnswer').call({
+        'storyContext': storyContext,
+        'question': question,
+        'studentAnswer': studentAnswer,
+        'activityType': activityType,
+        'maxPoints': maxPoints,
+        if (correctAnswer != null) 'correctAnswer': correctAnswer,
+      });
+
+      // The cloud function returns the evaluation directly
+      final evaluation = Map<String, dynamic>.from(result.data as Map);
+
+      // Validate required fields
+      if (!evaluation.containsKey('points') ||
+          !evaluation.containsKey('isCorrect') ||
+          !evaluation.containsKey('feedback') ||
+          !evaluation.containsKey('explanation') ||
+          !evaluation.containsKey('suggestions')) {
+        throw AiGenerationException(
+          'Invalid evaluation response: missing required fields',
+        );
+      }
+
+      return evaluation;
+
+    } on FirebaseFunctionsException catch (e) {
+      throw AiGenerationException(
+        'Cloud Function error: ${e.message}',
+        originalError: e,
+      );
+    } on AiGenerationException {
+      rethrow;
+    } catch (e, stackTrace) {
+      throw AiGenerationException(
+        'Failed to evaluate text answer: ${e.toString()}',
         originalError: e,
         stackTrace: stackTrace,
       );

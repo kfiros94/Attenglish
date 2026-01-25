@@ -56,6 +56,8 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
   int _tfCount = 3; // True/false count
   int _ddCount = 2; // Drag & drop count
   int _idCount = 0; // Image description count
+  int _clozeCount = 0; // Cloze question count (fill-in-blank from story)
+  int _openEndedCount = 0; // Open-ended question count (reading comprehension)
   bool _includeVocabulary = true;
 
   // State management
@@ -169,6 +171,8 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       trueFalseCount: _tfCount,
       dragDropCount: _ddCount,
       imageDescriptionCount: _idCount,
+      clozeCount: _clozeCount,
+      openEndedCount: _openEndedCount,
       includeVocabulary: _includeVocabulary,
     );
 
@@ -913,6 +917,8 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
       trueFalseCount: _tfCount,
       dragDropCount: _ddCount,
       imageDescriptionCount: _idCount,
+      clozeCount: _clozeCount,
+      openEndedCount: _openEndedCount,
       includeVocabulary: _includeVocabulary,
     );
 
@@ -1727,6 +1733,26 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildCountSelector(
+                    'Cloze',
+                    _clozeCount,
+                    (val) => setState(() => _clozeCount = val),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildCountSelector(
+                    'Open-ended',
+                    _openEndedCount,
+                    (val) => setState(() => _openEndedCount = val),
+                  ),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 16),
 
@@ -1755,7 +1781,7 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '${_mcCount + _maCount + _fbCount + _tfCount + _ddCount + _idCount}',
+                    '${_mcCount + _maCount + _fbCount + _tfCount + _ddCount + _idCount + _clozeCount + _openEndedCount}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

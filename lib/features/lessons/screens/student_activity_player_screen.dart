@@ -5,6 +5,8 @@ import '../widgets/activities/fill_blank_widget.dart';
 import '../widgets/activities/true_false_widget.dart';
 import '../widgets/activities/drag_drop_widget.dart';
 import '../widgets/activities/image_description_widget.dart';
+import '../widgets/activities/cloze_widget.dart';
+import '../widgets/activities/open_ended_widget.dart';
 import '../../gamification/services/gamification_service.dart';
 import '../../auth/services/auth_service.dart';
 
@@ -37,6 +39,14 @@ class _StudentActivityPlayerScreenState
   late List<bool> _completedActivities;
   final _gamificationService = GamificationService();
   bool _isFirstActivityOfDay = true;
+  bool _waitingForNext = false; // For AI-evaluated activities that need manual "Next"
+
+  /// Activity types that require manual "Next" button (AI-evaluated with feedback)
+  static const _manualNextActivityTypes = {
+    'image_description',
+    'cloze',
+    'open_ended',
+  };
 
   @override
   void initState() {
@@ -130,6 +140,48 @@ class _StudentActivityPlayerScreenState
               child: _buildCurrentActivity(),
             ),
           ),
+
+          // Next button for AI-evaluated activities
+          if (_waitingForNext)
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _goToNextActivity,
+                    icon: const Icon(Icons.arrow_forward),
+                    label: Text(
+                      _currentActivityIndex >= widget.activities.length - 1
+                          ? 'Finish Lesson'
+                          : 'Next Activity',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -174,6 +226,20 @@ class _StudentActivityPlayerScreenState
           onAnswered: _onActivityAnswered,
         );
 
+      case 'cloze':
+        return ClozeWidget(
+          key: ValueKey('cloze_$_currentActivityIndex'),
+          activity: activity,
+          onAnswered: _onActivityAnswered,
+        );
+
+      case 'open_ended':
+        return OpenEndedWidget(
+          key: ValueKey('oe_$_currentActivityIndex'),
+          activity: activity,
+          onAnswered: _onActivityAnswered,
+        );
+
       default:
         return Center(
           child: Column(
@@ -192,6 +258,9 @@ class _StudentActivityPlayerScreenState
   }
 
   void _onActivityAnswered(bool isCorrect, int points) async {
+    final currentActivity = widget.activities[_currentActivityIndex];
+    final requiresManualNext = _manualNextActivityTypes.contains(currentActivity.type);
+
     setState(() {
       // Mark as completed
       _completedActivities[_currentActivityIndex] = true;
@@ -199,6 +268,11 @@ class _StudentActivityPlayerScreenState
       // Add points only if correct
       if (isCorrect) {
         _totalScore += points;
+      }
+
+      // For AI-evaluated activities, wait for user to click "Next"
+      if (requiresManualNext) {
+        _waitingForNext = true;
       }
     });
 
@@ -213,8 +287,8 @@ class _StudentActivityPlayerScreenState
       await _awardLessonCompletionXp();
       // Show completion dialog
       _showCompletionDialog();
-    } else {
-      // Move to next activity after delay
+    } else if (!requiresManualNext) {
+      // Auto-advance only for non-AI-evaluated activities
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() {
@@ -222,6 +296,20 @@ class _StudentActivityPlayerScreenState
           });
         }
       });
+    }
+    // For AI-evaluated activities, user must click "Next" button
+  }
+
+  /// Moves to next activity (called when user clicks "Next" button)
+  void _goToNextActivity() {
+    if (_currentActivityIndex < widget.activities.length - 1) {
+      setState(() {
+        _waitingForNext = false;
+        _currentActivityIndex++;
+      });
+    } else {
+      // Last activity - show completion
+      _showCompletionDialog();
     }
   }
 
@@ -465,8 +553,7 @@ class _StudentActivityPlayerScreenState
         actions: [
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context, _totalScore); // Return to lesson list with score
+              Navigator.pop(context); // Just close the dialog, stay on current screen
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,

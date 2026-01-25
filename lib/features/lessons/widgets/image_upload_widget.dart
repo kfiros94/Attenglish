@@ -410,31 +410,59 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
     );
   }
 
-  /// Build uploading placeholder
+  /// Build uploading placeholder with prominent progress indicator
   Widget _buildUploadingPlaceholder(String tempId) {
-    final progress = _uploadProgress[tempId] ?? 0.0;
-
     return Container(
       width: 150,
       height: 150,
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: Colors.purple.shade50,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300, width: 2),
+        border: Border.all(color: Colors.purple.shade300, width: 2),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            value: progress,
-            strokeWidth: 3,
+          // Animated upload icon
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(seconds: 2),
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, -8 * (1 - value)),
+                child: Icon(
+                  Icons.cloud_upload,
+                  size: 36,
+                  color: Colors.purple.shade400,
+                ),
+              );
+            },
+            onEnd: () {},
+          ),
+          const SizedBox(height: 8),
+          // Progress indicator
+          SizedBox(
+            width: 100,
+            child: LinearProgressIndicator(
+              backgroundColor: Colors.purple.shade100,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.purple.shade400),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Uploading...',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w600,
+              color: Colors.purple.shade700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Please wait',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.purple.shade400,
             ),
           ),
         ],
