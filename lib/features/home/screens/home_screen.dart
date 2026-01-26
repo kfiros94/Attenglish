@@ -24,6 +24,10 @@ import '../../gamification/widgets/streak_calendar.dart';
 import '../../lessons/screens/student_all_tasks_screen.dart';
 import '../../student_progress/screens/student_progress_screen.dart';
 import 'package:getwidget/getwidget.dart';
+import '../../tutorial/services/tutorial_service.dart';
+import '../../tutorial/models/tutorial_step.dart';
+import '../../tutorial/widgets/tutorial_overlay.dart';
+import '../../tutorial/widgets/help_button.dart';
 
 /// Home screen with personalized greeting and user dashboard
 class HomeScreen extends StatefulWidget {
@@ -37,6 +41,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Locale _currentLocale = LocalizationService.instance.currentLocale;
   UserModel? _userData;
   bool _isLoading = true;
+
+  // Tutorial controller and keys
+  final TutorialController _tutorialController = TutorialController();
+  bool _tutorialChecked = false;
+
+  // GlobalKeys for teacher dashboard cards (for tutorial highlighting)
+  final GlobalKey _aiGeneratorKey = GlobalKey();
+  final GlobalKey _classroomsKey = GlobalKey();
+  final GlobalKey _progressKey = GlobalKey();
+  final GlobalKey _createLessonKey = GlobalKey();
+  final GlobalKey _libraryKey = GlobalKey();
+
+  // GlobalKey for student lessons area
+  final GlobalKey _lessonsKey = GlobalKey();
 
   @override
   void initState() {
@@ -54,6 +72,88 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _tutorialController.hide();
+    super.dispose();
+  }
+
+  /// Check and show tutorial for first-time users
+  Future<void> _checkAndShowTutorial() async {
+    if (_tutorialChecked || _userData == null) return;
+    _tutorialChecked = true;
+
+    final role = _userData!.role;
+    final hasCompleted = await TutorialService.instance.hasCompletedTutorial(role);
+
+    if (!hasCompleted && mounted) {
+      // Delay slightly to let the UI build
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        _startTutorial();
+      }
+    }
+  }
+
+  /// Start the tutorial for current user role
+  void _startTutorial() {
+    if (_userData == null) return;
+
+    final role = _userData!.role;
+    List<TutorialStep> steps;
+
+    if (role == 'teacher' || role == 'admin') {
+      steps = TeacherTutorialSteps.getSteps(
+        aiGeneratorKey: _aiGeneratorKey,
+        classroomsKey: _classroomsKey,
+        progressKey: _progressKey,
+        createLessonKey: _createLessonKey,
+        libraryKey: _libraryKey,
+      );
+    } else {
+      steps = StudentTutorialSteps.getSteps(
+        lessonsKey: _lessonsKey,
+      );
+    }
+
+    _tutorialController.show(
+      context: context,
+      steps: steps,
+      userRole: role,
+      onComplete: () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                LocalizationService.instance.isRTL
+                    ? 'מעולה! אתה מוכן להתחיל'
+                    : 'Great! You\'re ready to start',
+              ),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  /// Replay tutorial (called from help button)
+  Future<void> _replayTutorial() async {
+    if (_userData == null) return;
+    await TutorialService.instance.resetTutorial(_userData!.role);
+    _startTutorial();
+  }
+
+  /// Show help dialog
+  void _showHelpDialog() {
+    if (_userData == null) return;
+    showDialog(
+      context: context,
+      builder: (context) => HelpDialog(userRole: _userData!.role),
+    );
+  }
+
   /// Load current user data from Firestore
   Future<void> _loadUserData() async {
     try {
@@ -64,6 +164,10 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _userData = userData;
             _isLoading = false;
+          });
+          // Check and show tutorial after UI is built
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _checkAndShowTutorial();
           });
         }
       } else {
@@ -158,6 +262,15 @@ class _HomeScreenState extends State<HomeScreen> {
         title: !_isLoading && _userData != null ? _buildGreeting() : null,
         centerTitle: false,
         actions: [
+          // Help button (tutorial)
+          if (!_isLoading && _userData != null)
+            HelpButton(
+              onReplayTutorial: _replayTutorial,
+              onShowHelp: _showHelpDialog,
+              size: 36,
+            ),
+          const SizedBox(width: AppTheme.spacingSmall),
+
           // Language toggle
           const LanguageToggle(size: 36),
           const SizedBox(width: AppTheme.spacingSmall),
@@ -411,6 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 // AI Generator card
                 SizedBox(
+                  key: _aiGeneratorKey,
                   width: cardWidth,
                   height: cardHeight,
                   child: DashboardCard(
@@ -437,6 +551,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // My Classrooms card
                 SizedBox(
+                  key: _classroomsKey,
                   width: cardWidth,
                   height: cardHeight,
                   child: DashboardCard(
@@ -458,6 +573,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Student Progress card
                 SizedBox(
+                  key: _progressKey,
                   width: cardWidth,
                   height: cardHeight,
                   child: DashboardCard(
@@ -485,6 +601,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Create Lesson card
                 SizedBox(
+                  key: _createLessonKey,
                   width: cardWidth,
                   height: cardHeight,
                   child: DashboardCard(
@@ -506,6 +623,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Content Library card
                 SizedBox(
+                  key: _libraryKey,
                   width: cardWidth,
                   height: cardHeight,
                   child: DashboardCard(
@@ -772,6 +890,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // 5. Today's Mission section header
         Row(
+          key: _lessonsKey,
           children: [
             Text(
               '🎯',
