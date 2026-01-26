@@ -17,6 +17,7 @@ class DashboardCard extends StatefulWidget {
   final String? badgeText;
   final VoidCallback onTap;
   final String? imageUrl;
+  final String? imagePath; // Local asset image path
   final LinearGradient? gradient;
   final List<Color>? gradientColors; // Custom gradient for illustration
   final String? tooltipMessage; // Accessibility tooltip
@@ -30,6 +31,7 @@ class DashboardCard extends StatefulWidget {
     this.badgeText,
     required this.onTap,
     this.imageUrl,
+    this.imagePath,
     this.gradient,
     this.gradientColors,
     this.tooltipMessage,
@@ -137,54 +139,76 @@ class _DashboardCardState extends State<DashboardCard>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Gradient illustration header (top 45%)
+                          // Image/Gradient illustration header (top 55%)
                           Expanded(
-                            flex: 45,
+                            flex: 55,
                             child: Stack(
                               children: [
-                                // Beautiful gradient background
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: _getGradient(),
-                                  ),
-                                  child: widget.imageUrl != null
-                                      ? Image.network(
-                                          widget.imageUrl!,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                          errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  Container(),
-                                        )
-                                      : null,
-                                ),
-
-                                // Decorative pattern overlay
-                                Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: _CardPatternPainter(
-                                      color: Colors.white.withOpacity(0.1),
+                                // Background: Local image, network image, or gradient
+                                if (widget.imagePath != null)
+                                  // Local asset image with light background
+                                  Positioned.fill(
+                                    child: Container(
+                                      color: Colors.grey.shade50,
+                                      child: Image.asset(
+                                        widget.imagePath!,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            Container(
+                                          decoration: BoxDecoration(
+                                            gradient: _getGradient(),
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-
-                                // Large centered icon as illustration
-                                Center(
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: EdgeInsets.all(_isHovered ? 20 : 16),
+                                  )
+                                else if (widget.imageUrl != null)
+                                  // Network image with gradient fallback
+                                  Positioned.fill(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: _getGradient(),
+                                      ),
+                                      child: Image.network(
+                                        widget.imageUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            Container(),
+                                      ),
+                                    ),
+                                  )
+                                else ...[
+                                  // Gradient background with icon
+                                  Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(_isHovered ? 0.25 : 0.2),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      widget.icon,
-                                      size: _isHovered ? 48 : 44,
-                                      color: Colors.white,
+                                      gradient: _getGradient(),
                                     ),
                                   ),
-                                ),
+                                  // Decorative pattern overlay
+                                  Positioned.fill(
+                                    child: CustomPaint(
+                                      painter: _CardPatternPainter(
+                                        color: Colors.white.withOpacity(0.1),
+                                      ),
+                                    ),
+                                  ),
+                                  // Large centered icon as illustration
+                                  Center(
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      padding: EdgeInsets.all(_isHovered ? 20 : 16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(_isHovered ? 0.25 : 0.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        widget.icon,
+                                        size: _isHovered ? 48 : 44,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
 
                                 // Badge
                                 if (widget.badgeText != null)
@@ -222,9 +246,9 @@ class _DashboardCardState extends State<DashboardCard>
                             ),
                           ),
 
-                          // Content section (bottom 55%)
+                          // Content section (bottom 45%)
                           Expanded(
-                            flex: 55,
+                            flex: 45,
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(

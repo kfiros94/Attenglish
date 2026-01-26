@@ -114,26 +114,28 @@ class _LessonsCompletedChartState extends State<LessonsCompletedChart> {
                             return const SizedBox.shrink();
                           }
                           final name = widget.progressData[index].studentName;
-                          final shortName = name.length > 8
-                              ? '${name.substring(0, 6)}...'
-                              : name;
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Transform.rotate(
-                              angle: -0.5,
-                              child: Text(
-                                shortName,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: _touchedIndex == index
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                              angle: -0.7,
+                              child: SizedBox(
+                                width: 80,
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: _touchedIndex == index
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                             ),
                           );
                         },
-                        reservedSize: 40,
+                        reservedSize: 60,
                       ),
                     ),
                     leftTitles: AxisTitles(
@@ -357,26 +359,28 @@ class _AverageScoreChartState extends State<AverageScoreChart> {
                             return const SizedBox.shrink();
                           }
                           final name = widget.progressData[index].studentName;
-                          final shortName = name.length > 8
-                              ? '${name.substring(0, 6)}...'
-                              : name;
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Transform.rotate(
-                              angle: -0.5,
-                              child: Text(
-                                shortName,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: _touchedIndex == index
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                              angle: -0.7,
+                              child: SizedBox(
+                                width: 80,
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: _touchedIndex == index
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                             ),
                           );
                         },
-                        reservedSize: 40,
+                        reservedSize: 60,
                       ),
                     ),
                     leftTitles: AxisTitles(
