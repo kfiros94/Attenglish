@@ -326,7 +326,7 @@ class AppStrings {
       _isHebrew(locale) ? 'צפה בכל המשימות' : 'View All Tasks';
 
   static String todaysMission(Locale locale) =>
-      _isHebrew(locale) ? 'המשימה שלך היום' : 'Today\'s Mission';
+      _isHebrew(locale) ? 'המשימות שלך היום' : 'Today\'s Assignments';
 
   static String done(Locale locale) =>
       _isHebrew(locale) ? 'הושלם' : 'DONE';

@@ -84,6 +84,9 @@ dependencies:
   spreadsheet_decoder: ^2.3.0
   desktop_drop: ^0.7.0
 
+  # Charts for progress visualization
+  fl_chart: ^0.68.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -22,6 +22,7 @@ import '../../../core/theme/adhd_theme.dart';
 import '../../ai_generation/screens/ai_generator_screen.dart';
 import '../../gamification/widgets/streak_calendar.dart';
 import '../../lessons/screens/student_all_tasks_screen.dart';
+import '../../student_progress/screens/student_progress_screen.dart';
 import 'package:getwidget/getwidget.dart';
 
 /// Home screen with personalized greeting and user dashboard
@@ -464,17 +465,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   description: isRTL
                       ? 'צפה בדוחות והתקדמות'
                       : 'View reports and analytics',
-                  badgeText: isRTL ? 'בקרוב' : 'Soon',
                   tooltipMessage: isRTL
                       ? 'עקוב אחר התקדמות התלמידים עם גרפים ודוחות'
                       : 'Track student progress with charts and reports',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isRTL
-                              ? 'תכונה זו תהיה זמינה בקרוב'
-                              : 'This feature is coming soon',
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => StudentProgressScreen(
+                          teacherId: _userData!.id,
                         ),
                       ),
                     );

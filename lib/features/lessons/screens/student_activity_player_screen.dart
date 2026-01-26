@@ -9,6 +9,7 @@ import '../widgets/activities/cloze_widget.dart';
 import '../widgets/activities/open_ended_widget.dart';
 import '../../gamification/services/gamification_service.dart';
 import '../../auth/services/auth_service.dart';
+import '../../student_progress/services/progress_service.dart';
 
 /// Activity Player Screen for Students
 ///
@@ -38,6 +39,7 @@ class _StudentActivityPlayerScreenState
   int _totalXpEarned = 0;
   late List<bool> _completedActivities;
   final _gamificationService = GamificationService();
+  final _progressService = ProgressService();
   bool _isFirstActivityOfDay = true;
   bool _waitingForNext = false; // For AI-evaluated activities that need manual "Next"
 
@@ -366,6 +368,9 @@ class _StudentActivityPlayerScreenState
     if (currentUser == null) return;
 
     try {
+      // Save lesson completion with score for progress tracking
+      await _saveLessonCompletion();
+
       // Use completeLessonWithReward to check if already completed
       final result = await _gamificationService.completeLessonWithReward(
         userId: currentUser.uid,
@@ -426,6 +431,43 @@ class _StudentActivityPlayerScreenState
       }
     } catch (e) {
       print('Error awarding lesson completion XP: $e');
+    }
+  }
+
+  /// Save lesson completion data for progress tracking
+  Future<void> _saveLessonCompletion() async {
+    final currentUser = AuthService.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      // Get user data to find classId
+      final userData = await AuthService.instance.getUserData(currentUser.uid);
+      final classId = userData?.classId;
+
+      if (classId == null || classId.isEmpty) {
+        print('Student has no classId, skipping progress save');
+        return;
+      }
+
+      // Calculate max possible score from all activities
+      final maxScore = widget.activities.fold<int>(
+        0,
+        (sum, activity) => sum + activity.points,
+      );
+
+      // Save the lesson completion
+      await _progressService.saveLessonCompletion(
+        lessonId: widget.lessonId,
+        lessonTitle: widget.lessonTitle,
+        studentId: currentUser.uid,
+        classId: classId,
+        score: _totalScore,
+        maxScore: maxScore,
+      );
+
+      print('Saved lesson completion: $_totalScore / $maxScore');
+    } catch (e) {
+      print('Error saving lesson completion: $e');
     }
   }
 
