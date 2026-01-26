@@ -85,8 +85,8 @@ class AppTheme {
         onError: AppColors.textOnPrimary,
       ),
 
-      // Scaffold Background
-      scaffoldBackgroundColor: AppColors.background,
+      // Scaffold Background - Transparent to show global background image
+      scaffoldBackgroundColor: Colors.transparent,
 
       // App Bar Theme
       appBarTheme: const AppBarTheme(

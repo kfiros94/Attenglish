@@ -80,11 +80,19 @@ class _MyAppState extends State<MyApp> {
       // Current locale
       locale: _locale,
 
-      // Builder to set text direction based on locale
+      // Builder to set text direction and global background
       builder: (context, child) {
         return Directionality(
           textDirection: LocalizationService.instance.textDirection,
-          child: child!,
+          child: Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/background/app_background.jpeg'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: child!,
+          ),
         );
       },
 
@@ -118,8 +126,8 @@ class AuthStateHandler extends StatelessWidget {
       builder: (context, snapshot) {
         // Show loading while checking auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: AppColors.background,
+          return Scaffold(
+            backgroundColor: Colors.transparent,
             body: Center(
               child: CircularProgressIndicator(
                 color: AppColors.primary,

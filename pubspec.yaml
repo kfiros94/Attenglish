@@ -118,6 +118,7 @@ flutter:
     - assets/images/levels/
     - assets/images/favicon/
     - assets/images/teacher_buttons/
+    - assets/images/background/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
