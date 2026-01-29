@@ -65,12 +65,25 @@ Capstone project was developed by Kfir Amoyal & Omri Heit and advised by Dr. Nat
 ## 💾 Installation
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/your-org/attenglish.git
 cd attenglish
 
-# Install dependencies
-npm install
+# 2. Install Flutter dependencies
+flutter pub get
 
-# Run the app (example for Expo)
-npm start
+# 3. Set up environment variables
+cp .env.example .env
+# Edit .env and add your ANTHROPIC_API_KEY
+
+# 4. Install Cloud Functions dependencies
+cd functions
+npm install
+cd ..
+
+# 5. Run on web (Chrome)
+flutter run -d chrome
+
+# 6. Run on Android
+flutter run -d <device-id>
+
