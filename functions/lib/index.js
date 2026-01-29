@@ -7,7 +7,7 @@ const v2_1 = require("firebase-functions/v2");
 const v2_2 = require("firebase-functions/v2");
 // Initialize Firebase Admin.
 admin.initializeApp();
-// Set global options
+// Set global options.
 (0, v2_1.setGlobalOptions)({
     timeoutSeconds: 120,
     memory: '512MiB',
